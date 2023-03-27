@@ -17,7 +17,6 @@ WORKDIR /app
 
 # NODE_MODULES
 COPY package*.json ./
-COPY package-lock ./
 RUN npm install --production
 
 # APP
