@@ -20,10 +20,7 @@ COPY package*.json ./
 RUN npm install --production
 
 # APP
-COPY --chown=node:node . .
-
- # RUN AS
-USER node
+COPY . .
 
 # REQUIS: les variables d'environnement DISCORD_GUILD_ID, DISCORD_CLIENT_ID et BOT_TOKEN au build fournis en ARGS!
 ENV DISCORD_GUILD_ID $DISCORD_GUILD_ID
