@@ -10,6 +10,7 @@ ENV LANG C.UTF-8
 ENV EDITOR nano
 
 RUN apk add dumb-init
+RUN mkdir /data
 
 # APP dir
 WORKDIR /app
