@@ -13,63 +13,68 @@ const commands = new SlashCommandBuilder()
   .addSubcommand(subcommand =>
     subcommand
       .setName('add')
-      .setDescription('Ajoute un achievement')
+      .setDescription('Ajouter un haut-fait a accomplir')
       .addStringOption(option =>
         option
           .setName('title')
-          .setDescription('Nom de l\'achievement')
+          .setDescription('Titre du haut-fait')
           .setRequired(true))
       .addStringOption(option =>
         option
           .setName('description')
-          .setDescription('Description de l\'achievement')
+          .setDescription('Description du haut-fait')
           .setRequired(true))
       .addStringOption(option =>
         option
           .setName('image')
-          .setDescription('URL de l\'image de l\'achievement'))
+          .setDescription('URL de l\'image'))
       .addIntegerOption(option =>
         option
-          .setName('points')
-          .setDescription('Points de l\'achievement'))
+          .setName('xp')
+          .setDescription('XP rapportée'))
       .addBooleanOption(option =>
         option
           .setName('private')
-          .setDescription('Rendre l\'achievement privé ?')))
+          .setDescription('Rendre privé ?')))
 
 
   //update
   .addSubcommand(subcommand =>
     subcommand
       .setName('update')
-      .setDescription('Modifie un achievement')
+      .setDescription('Modifier un haut-fait')
       .addStringOption(option =>
         option
           .setName('id')
-          .setDescription('ID de l\'achievement')
+          .setDescription('ID du haut-fait')
           .setRequired(true))
       .addStringOption(option =>
         option
           .setName('title')
-          .setDescription('Nom de l\'achievement'))
+          .setDescription('Titre du haut-fait'))
       .addStringOption(option =>
         option
           .setName('description')
-          .setDescription('Description de l\'achievement'))
+          .setDescription('Description du haut-fait'))
       .addStringOption(option =>
         option
           .setName('image')
-          .setDescription('URL de l\'image de l\'achievement'))
+          .setDescription('URL de l\'image'))
       .addIntegerOption(option =>
         option
-          .setName('points')
-          .setDescription('Points de l\'achievement')))
+          .setName('xp')
+          .setDescription('XP rapportée'))
+      .addBooleanOption(option =>
+        option
+          .setName('private')
+          .setDescription('Rendre privé ?')))
+
 
   //rm
   .addSubcommand(subcommand =>
     subcommand
-      .setName('rm')
-      .setDescription('Supprime un achievement')
+      .setName('delete')
+      .setDescription('Supprimer un haut-fait de sa liste')
       .addStringOption(option =>
         option
           .setName('id')
@@ -79,14 +84,18 @@ const commands = new SlashCommandBuilder()
   //list
   .addSubcommand(subcommand =>
     subcommand
-      .setName('ls')
-      .setDescription('Liste les achievements'))
+      .setName('list')
+      .setDescription('Lister les hauts-faits')
+      .addStringOption(option =>
+        option
+          .setName('user')
+          .setDescription('Nom de l\'utilisateur')))
 
   //complete
   .addSubcommand(subcommand =>
     subcommand
       .setName('complete')
-      .setDescription('Complete un achievement')
+      .setDescription('Complete un haut-fait')
       .addStringOption(option =>
         option
           .setName('id')
@@ -111,9 +120,14 @@ async function add(client, interaction) {
     private: private
   };
   try {
-    await api.addUserAchievement(username, achievement);
-    interaction.reply({content: `Haut fait ajouté !`});
-  } catch (error) {
+    await api.addUserAchievement(username, achievement);  
+    if(private) {
+      interaction.reply({content: `Haut-fait [${achievement.title}] ajouté !`, ephemeral: true});
+    }
+    else {
+      interaction.reply({content: `${interaction.member} a ajouté un haut-fait a accomplir dans sa liste !\n[${achievement.title}] ${achievement.description} (+${achievement.points}xp) !`});
+    }
+   } catch (error) {
     console.error('Erreur lors de la commande add', error);
   }
 }
@@ -179,7 +193,7 @@ async function ls(client, interaction) {
       .setTimestamp()
     
     interaction.reply({content: "toto", embeds: [embed]});*/
-    interaction.reply({content: msg});
+    interaction.reply({content: msg, ephemeral: true});
   } catch (error) {
     console.error('Erreur lors de la commande ls', error);
   }
@@ -189,8 +203,31 @@ async function complete(client, interaction) {
   const username  = client.users.cache.get(interaction.user.id).username; //TODO: check if user exists
   const id = interaction.options.getString('id');
   try {
+    
+    const achievement = await api.getUserAchievementById(username, id);
+
+    //inconnu
+    if(achievement === undefined) {
+      interaction.reply({content: `Haut-fait [${id}] introuvable !`, ephemeral: true});
+      return;
+    }
+    
+    //deja complete
+    if(achievement.dateCompleted !== undefined) {
+      interaction.reply({content: `Haut-fait [${id}] déjà complété !`, ephemeral: true});
+      return;
+    }
+
     await api.completeUserAchievement(username, id);
-    interaction.reply({content: `Haut fait [${id}] complété !`});
+    
+    //privé -> reponse qu'a l'utilisateur
+    if(achievement.private) {
+      interaction.reply({content: `Haut-fait [${achievement.title}] complété !`, ephemeral: true});
+      return;
+    }
+
+    //public -> reponse dans le channel ou a été lancé la commande
+    interaction.reply({content: `${interaction.member} a complété un haut-fait de sa liste !\n[${achievement.title}] ${achievement.description} (+${achievement.points}xp) !`});
   } catch (error) {
     console.error('Erreur lors de la commande complete', error);
   }
@@ -206,8 +243,10 @@ module.exports = {
       case 'update':
         return await update(client, interaction);
       case 'rm':
+      case 'delete':
         return await rm(client, interaction);
       case 'ls':
+      case 'list':
         return await ls(client, interaction);
       case 'complete':
         return await complete(client, interaction);
