@@ -7,7 +7,7 @@ const api = require('../lib/api');
 
 const commands = new SlashCommandBuilder()
   .setName('achievement')
-  .setDescription('Gere les achievements personnels !')
+  .setDescription('Gere les haut-faits personnels !')
   
   //add
   .addSubcommand(subcommand =>
@@ -47,7 +47,8 @@ const commands = new SlashCommandBuilder()
         option
           .setName('id')
           .setDescription('ID du haut-fait')
-          .setRequired(true))
+          .setRequired(true)
+          .setAutocomplete(true))
       .addStringOption(option =>
         option
           .setName('title')
@@ -79,7 +80,8 @@ const commands = new SlashCommandBuilder()
         option
           .setName('id')
           .setDescription('ID de l\'achievement')
-          .setRequired(true)))
+          .setRequired(true)
+          .setAutocomplete(true)))
 
   //list
   .addSubcommand(subcommand =>
@@ -100,7 +102,29 @@ const commands = new SlashCommandBuilder()
         option
           .setName('id')
           .setDescription('ID de l\'achievement')
-          .setRequired(true)));
+          .setRequired(true)
+          .setAutocomplete(true)));
+
+const shiftCharCode = Δ => c => String.fromCharCode(c.charCodeAt(0) + Δ);
+const toFullWidth = str => str.replace(/[!-~]/g, shiftCharCode(0xFEE0));
+const toHalfWidth = str => str.replace(/[！-～]/g, shiftCharCode(-0xFEE0));
+
+//return size of characters in string 
+//full width characters (2 bytes) and half width characters (1 byte)
+const mbStrWidth = input => {
+  let len = 0;
+  for (let i = 0; i < input.length; i++) {
+      let code = input.charCodeAt(i);
+      if ((code >= 0x0020 && code <= 0x1FFF) || (code >= 0xFF61 && code <= 0xFF9F)) {
+          len += 1;
+      } else if ((code >= 0x2000 && code <= 0xFF60) || (code >= 0xFFA0)) {
+          len += 2;
+      } else {
+          len += 0;
+      }
+  }
+  return len;
+};
 
 async function add(client, interaction) {
   
@@ -155,7 +179,7 @@ async function update(client, interaction) {
     await api.updateUserAchievement(username, achievement);
     interaction.reply({content: `Haut fait [${id}] modifié !`});
   } catch (error) {
-    console.error('Erreur lors de la commande add', error);
+    console.error('Erreur lors de la commande update', error);
   }
 }
 
@@ -177,7 +201,7 @@ async function ls(client, interaction) {
 
     const msg = 
       `Liste des hauts faits de ${username}:`
-      + achievements.map(achievement => `\n${achievement.id}> [${achievement.title}] ${achievement.description} (${achievement.points} points)`).join('');
+      + achievements.map(achievement => `\n${toFullWidth(achievement.id)}> [${achievement.title}] ${achievement.description} (+${achievement.points}xp)`).join('');
 
 /*
 
@@ -195,7 +219,7 @@ async function ls(client, interaction) {
     interaction.reply({content: "toto", embeds: [embed]});*/
     interaction.reply({content: msg, ephemeral: true});
   } catch (error) {
-    console.error('Erreur lors de la commande ls', error);
+    console.error('Erreur lors de la commande list', error);
   }
 }
 
@@ -233,6 +257,13 @@ async function complete(client, interaction) {
   }
 }
 
+//get ids from all achievements
+async function getAllAchievementIds(client, interaction) {
+  const username  = client.users.cache.get(interaction.user.id).username; //TODO: check if user exists
+  const achievements = await api.getUserAchievements(username);
+  return achievements.map(achievement => achievement.id); 
+}
+
 module.exports = {
 	data: commands,
   async execute(client, interaction) {
@@ -254,5 +285,21 @@ module.exports = {
         interaction.reply({content: `Désolé mais, la commande ${subcommand} n'existe pas ou n'est pas encore implementée :(`, ephemeral: true});
         break;
     }
+  },
+  async autocomplete(client, interaction) {
+		const focusedOption = interaction.options.getFocused(true);
+    let choices = [];
+    switch(focusedOption.name) {
+      case 'id':
+        choices = await getAllAchievementIds(client, interaction);
+        break;
+      default:
+        break;
+    }
+		const filtered = choices.filter(choice => choice.startsWith(focusedOption.value));
+		await interaction.respond(
+			filtered.map(choice => ({ name: choice, value: choice })),
+		);
   }
+	
 };
