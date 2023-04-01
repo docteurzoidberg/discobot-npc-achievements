@@ -222,6 +222,78 @@ const commands = new SlashCommandBuilder()
         .setName('list')
         .setDescription('Liste les tags/catégories')
     )
+  )
+
+  //settings
+  .addSubcommandGroup(group =>
+    group
+      .setName('settings')
+      .setDescription('Gestion des paramètres')
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('list')
+          .setDescription('Affiche les paramètres utilisateur')
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('announce_create')
+          .setDescription('Active/désactive l\'annonce de création de haut-fait publics')
+          .addBooleanOption(option =>
+            option
+              .setName('value')
+              .setDescription('Valeur')
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('announce_update')
+          .setDescription('Active/désactive l\'annonce de modification de haut-fait publics')
+          .addBooleanOption(option =>
+            option
+              .setName('value')
+              .setDescription('Valeur')
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('announce_complete')
+          .setDescription('Active/désactive l\'annonce de validation de haut-fait publics')
+          .addBooleanOption(option =>
+            option
+              .setName('value')
+              .setDescription('Valeur')
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('announce_undone')
+          .setDescription('Active/désactive l\'annonce d\'annulation de validation de haut-fait publics')
+          .addBooleanOption(option =>
+            option
+              .setName('value')
+              .setDescription('Valeur')
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('announce_delete')
+          .setDescription('Active/désactive l\'annonce de suppression de haut-fait publics')
+          .addBooleanOption(option =>
+            option
+              .setName('value')
+              .setDescription('Valeur')
+          ) 
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('announce_undelete')
+          .setDescription('Active/désactive l\'annonce d\'annulation de suppression de haut-fait publics')
+          .addBooleanOption(option =>
+            option
+              .setName('value')
+              .setDescription('Valeur')
+          )
+      )
   );
 
 const shiftCharCode = Δ => c => String.fromCharCode(c.charCodeAt(0) + Δ);
@@ -275,6 +347,16 @@ const parseDate = (date) => {
   }
 }
 
+const formatSettings = (settings) => {
+  const announceCreate = settings.ANNOUNCE_CREATE ? '✅' : '❌';
+  const announceUpdate = settings.ANNOUNCE_UPDATE ? '✅' : '❌';
+  const announceComplete = settings.ANNOUNCE_COMPLETE ? '✅' : '❌';
+  const announceUndone = settings.ANNOUNCE_UNDONE ? '✅' : '❌';
+  const announceDelete = settings.ANNOUNCE_DELETE ? '✅' : '❌';
+  const announceUndelete = settings.ANNOUNCE_UNDELETE ? '✅' : '❌';
+  return `Annoncer:\n${announceCreate} **Création**\n${announceUpdate} **Modification**\n${announceComplete} **Validation**\n${announceUndone} **Annulation de validation**\n${announceDelete} **Suppression**\n${announceUndelete} **Annulation de suppression** `;
+}
+
 //generate embed for achievement
 const generateAchievementEmbed = (achievement, username) => {
 
@@ -285,7 +367,7 @@ const generateAchievementEmbed = (achievement, username) => {
   const footerPrivate = achievement.private ? ' 🔒' : '';
   const footer = `${footerStatus} ${username}${footerPrivate}`;
 
-  const timestamp = achievement.dateCompleted ? parseDate(achievement.dateCompleted) : parseDate(achievement.dateCreated);
+  const timestamp = achievement.dateCompleted != null ? parseDate(achievement.dateCompleted) : parseDate(achievement.dateCreated);
   
   const embed = new EmbedBuilder()
     .setTitle(`[**${achievement.title}**]`)
@@ -401,22 +483,44 @@ async function commandAdd(client, interaction) {
 
 async function commandUpdate(client, interaction) {
   //TODO: public announce for update ?
-  const id = interaction.options.getString('id');
-  const title = interaction.options.getString('title');
-  const description = interaction.options.getString('description');
+  const id = interaction.options.getString('id') || '';
+  const title = interaction.options.getString('title')|| '';
+  const description = interaction.options.getString('description') || '';
   const image = interaction.options.getString('image') || '';
-  const xp = interaction.options.getInteger('xp') || 0;
-  const private = interaction.options.getBoolean('private') || false;
+  const xp = interaction.options.getInteger('xp') || null;
+  const private = interaction.options.getBoolean('private') || null;
 
-  //TODO: validation ?
+
+  if(id=='') {
+    interaction.reply({content: `L'ID du haut-fait est requis !`, ephemeral: true});
+    return;
+  }
+
+  const achievement = await api.getUserAchievementById(interaction.user.id, id);
+  if(!achievement) {
+    interaction.reply({content: `Haut-fait [${id}] introuvable !`, ephemeral: true});
+    return;
+  }
+ 
   const newAchievement = {
     id: id,
-    title: title,
-    description: description,
-    image: image,
-    xp: xp,
-    private: private
   };
+
+  if(title!='') {
+    newAchievement.title = title;
+  }
+  if(description!='') {
+    newAchievement.description = description;
+  }
+  if(image!='') {
+    newAchievement.image = image;
+  }
+  if(xp!=null) {
+    newAchievement.xp = xp;
+  }
+  if(private!=null) {
+    newAchievement.private = private;
+  }
 
   try {
     //get user settings for announce public update
@@ -572,16 +676,17 @@ async function commandComplete(client, interaction) {
     }
     
     //deja complete
-    if(achievement.dateCompleted !== undefined) {
+    if(achievement.dateCompleted !== null && achievement.dateCompleted !== undefined) {
       interaction.reply({content: `Haut-fait [${id}] déjà complété !`, ephemeral: true});
       return;
     }
 
     const username  = client.users.cache.get(interaction.user.id).username; //TODO: check if user exists
+    const settings = await api.getUserSettings(interaction.user.id);
     const embed = generateAchievementEmbed(achievement, username);
     const completedachievement = await api.completeUserAchievement(interaction.user.id, id);
     
-    if(completedachievement.private) {
+    if(completedachievement.private || !settings.ANNOUNCE_COMPLETE) {
       interaction.reply({content: `Haut-fait complété !`, embeds: [embed], ephemeral: true});
       return;
     } 
@@ -597,6 +702,10 @@ async function commandUndone(client, interaction) {
   const id = interaction.options.getString('id');
   try {
     const achievement = await api.getUserAchievementById(interaction.user.id, id);
+    const username = client.users.cache.get(interaction.user.id).username; //TODO: check if user exists
+    const embed = generateAchievementEmbed(achievement, username);
+    const settings = await api.getUserSettings(interaction.user.id);
+   
     if(achievement === undefined) {
       interaction.reply({content: `Haut-fait [${id}] introuvable !`, ephemeral: true});
       return;
@@ -605,8 +714,15 @@ async function commandUndone(client, interaction) {
       interaction.reply({content: `Haut-fait [${id}] déjà incomplet !`, ephemeral: true});
       return;
     }
-    await api.uncompleteUserAchievement(interaction.user.id, id);
-    interaction.reply({content: `Haut-fait [${id}] incomplet !`});
+
+    const undonedachievement = await api.uncompleteUserAchievement(interaction.user.id, id);
+
+    if(undonedachievement.private || !settings.ANNOUNCE_UNDONE) {
+      interaction.reply({content: `Haut-fait invalidé !`, embeds: [embed], ephemeral: true});
+      return;
+    }
+
+    interaction.reply({content: `${interaction.member} viens d'invalider le haut-fait:`, embeds: [embed]});
   } catch (error) {
     console.error('Erreur lors de la commande uncomplete', error);
   }
@@ -616,6 +732,10 @@ async function commandUndelete(client, interaction) {
   const id = interaction.options.getString('id');
   try {
     const achievement = await api.getUserAchievementById(interaction.user.id, id);
+    const username  = client.users.cache.get(interaction.user.id).username; //TODO: check if user exists
+    const settings = await api.getUserSettings(interaction.user.id);
+    const embed = generateAchievementEmbed(achievement, username, settings);
+
     if(achievement === undefined) {
       interaction.reply({content: `Haut-fait [${id}] introuvable !`, ephemeral: true});
       return;
@@ -625,7 +745,13 @@ async function commandUndelete(client, interaction) {
       return;
     }
     await api.undeleteUserAchievement(interaction.user.id, id);
-    interaction.reply({content: `Haut-fait [${id}] restauré !`});
+
+    if(achievement.private || !settings.ANNOUNCE_UNDELETE) {
+      interaction.reply({content: `Haut-fait [${id}] restauré !`, embeds: [embed], ephemeral: true});
+      return;
+    }
+
+    interaction.reply({content: `${interaction.member} viens de restaurer le haut-fait:`, embeds: [embed]});
   } catch (error) {
     console.error('Erreur lors de la commande undelete', error);
   }
@@ -706,9 +832,101 @@ async function commandTagList(client, interaction) {
   }
 }
 
+async function commandSettingsAnnounceCreate(client, interaction) {
+  const value = interaction.options.getBoolean('value');
+  try {
+    const settings = await api.getUserSettings(interaction.user.id);
+    settings.ANNOUNCE_CREATE = value;
+    await api.updateUserSettings(interaction.user.id, settings);
+    interaction.reply({content: `Paramètre ANNOUNCE_CREATE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+  }
+  catch (error) {
+    console.error('Erreur lors de la commande settingsAnnounceCreate', error);
+  }
+}
+
+async function commandSettingsAnnounceUpdate(client, interaction) {
+  const value = interaction.options.getBoolean('value');
+  try {
+    const settings = await api.getUserSettings(interaction.user.id);
+    settings.ANNOUNCE_UPDATE = value;
+    await api.updateUserSettings(interaction.user.id, settings);
+    interaction.reply({content: `Paramètre ANNOUNCE_UPDATE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+  }
+  catch (error) {
+    console.error('Erreur lors de la commande settingsAnnounceUpdate', error);
+  }
+}
+
+async function commandSettingsAnnounceComplete(client, interaction) {
+  const value = interaction.options.getBoolean('value');
+  try {
+    const settings = await api.getUserSettings(interaction.user.id);
+    settings.ANNOUNCE_COMPLETE = value;
+    await api.updateUserSettings(interaction.user.id, settings);
+    interaction.reply({content: `Paramètre ANNOUNCE_COMPLETE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+  }
+  catch (error) {
+    console.error('Erreur lors de la commande settingsAnnounceComplete', error);
+  }
+}
+
+async function commandSettingsAnnounceUncomplete(client, interaction) {
+  const value = interaction.options.getBoolean('value');
+  try {
+    const settings = await api.getUserSettings(interaction.user.id);
+    settings.ANNOUNCE_UNDONE = value;
+    await api.updateUserSettings(interaction.user.id, settings);
+    interaction.reply({content: `Paramètre ANNOUNCE_UNDONE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+  }
+  catch (error) {
+    console.error('Erreur lors de la commande settingsAnnounceUncomplete', error);
+  }
+}
+
+async function commandSettingsAnnounceDelete(client, interaction) {
+  const value = interaction.options.getBoolean('value');
+  try {
+    const settings = await api.getUserSettings(interaction.user.id);
+    settings.ANNOUNCE_DELETE = value;
+    await api.updateUserSettings(interaction.user.id, settings);
+    interaction.reply({content: `Paramètre ANNOUNCE_DELETE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+  }
+  catch (error) {
+    console.error('Erreur lors de la commande settingsAnnounceDelete', error);
+  }
+}
+
+async function commandSettingsAnnounceDelete(client, interaction) {
+  const value = interaction.options.getBoolean('value');
+  try {
+    const settings = await api.getUserSettings(interaction.user.id);
+    settings.ANNOUNCE_UNDELETE = value;
+    await api.updateUserSettings(interaction.user.id, settings);
+    interaction.reply({content: `Paramètre ANNOUNCE_UNDELETE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+  }
+  catch (error) {
+    console.error('Erreur lors de la commande settingsAnnounceUndelete', error);
+  }
+}
+
+async function commandSettingsList(client, interaction) {
+  try {
+    const settings = await api.getUserSettings(interaction.user.id);
+    const msg =
+      `Voici la liste des paramètres:\n${horizontalRule}\n${formatSettings(settings)}`;
+    interaction.reply({content: msg, ephemeral: true});
+  }
+  catch (error) {
+    console.error('Erreur lors de la commande settingsList', error);
+  }
+}
+
 //get ids from all achievements for auto complete
 async function getAllAchievementIds(client, interaction) {
   const achievements = await api.getUserAchievements(interaction.user.id);
+  //order by dateCreated desc
+  achievements.sort((a, b) => b.dateCreated - a.dateCreated);
   return achievements.map(achievement => achievement.id); 
 }
 
@@ -725,7 +943,7 @@ async function getCanUndeleteAchievementIds(client, interaction) {
   const achievements = await api.getUserAchievements(interaction.user.id, true);
   //order by dateDeleted desc
   achievements.sort((a, b) => b.dateDeleted - a.dateDeleted);
-  return achievements.filter(achievement => achievement.dateDeleted).map(achievement => achievement.id.toLocaleUpperCase());
+  return achievements.filter(achievement => achievement.dateDeleted != null).map(achievement => achievement.id.toLocaleUpperCase());
 }
 
 //get all completed achievements and returns only ids for auto complete
@@ -761,6 +979,27 @@ module.exports = {
     if(!group) group = 'achievement';
  
     switch (group) {
+      case 'settings':
+        switch (subcommand) {
+          case 'list':
+            return await commandSettingsList(client, interaction);
+          case 'announce_create':
+            return await commandSettingsAnnounceCreate(client, interaction);
+          case 'announce_delete':
+            return await commandSettingsAnnounceDelete(client, interaction);
+          case 'announce_update':
+            return await commandSettingsAnnounceUpdate(client, interaction);
+          case 'announce_complete':
+            return await commandSettingsAnnounceComplete(client, interaction);
+          case 'announce_undelete':
+            return await commandSettingsAnnounceUndelete(client, interaction);
+          case 'announce_undone':
+            return await commandSettingsAnnounceUncomplete(client, interaction);
+          default:
+            interaction.reply({content: `Désolé mais, la commande ${subcommand} n'existe pas ou n'est pas encore implementée :(`, ephemeral: true});
+            break;
+        }
+        break;
       case 'tag':
         switch (subcommand) {
           case 'add':
@@ -788,7 +1027,7 @@ module.exports = {
             return await commandUndelete(client, interaction);
           case 'complete':
             return await commandComplete(client, interaction);
-          case 'uncomplete':
+          case 'undone':
             return await commandUndone(client, interaction);
           case 'show':
             return await commandShowAchievement(client, interaction);
@@ -810,10 +1049,10 @@ module.exports = {
         const subcommand = interaction.options.getSubcommand();
         if(subcommand === 'complete') {
           choices = await getCanCompleteAchievementIds(client, interaction);
-        } else if(subcommand === 'uncomplete') {
+        } else if(subcommand === 'undone') {
           choices = await getCanUncompleteAchievementIds(client, interaction);
         } else if(subcommand === 'undelete') {
-          choices = getCanUndeleteAchievementIds(client, interaction);
+          choices = await getCanUndeleteAchievementIds(client, interaction);
         } else {
           choices = await getAllAchievementIds(client, interaction);
         } 
@@ -824,6 +1063,7 @@ module.exports = {
       default:
         break;
     }
+
 		const filtered = choices.filter(choice => choice.startsWith(focusedOption.value));
 		await interaction.respond(
 			filtered.map(choice => ({ name: choice, value: choice })),
