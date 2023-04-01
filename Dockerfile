@@ -31,8 +31,8 @@ ENV BOT_TOKEN $BOT_TOKEN
 ENV BOT_VERSION $BOT_VERSION
 
 # REGISTER bot commands
-RUN node register | pino-pretty
+RUN npm run register
 
 # RUN
-CMD ["dumb-init", "node", "index", "|", "pino-pretty"]
+CMD ["dumb-init", "npm", "run", "bot"]
 
