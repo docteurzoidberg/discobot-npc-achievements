@@ -897,7 +897,7 @@ async function commandSettingsAnnounceDelete(client, interaction) {
   }
 }
 
-async function commandSettingsAnnounceDelete(client, interaction) {
+async function commandSettingsAnnounceUndelete(client, interaction) {
   const value = interaction.options.getBoolean('value');
   try {
     const settings = await api.getUserSettings(interaction.user.id);
