@@ -1,5 +1,7 @@
 require('dotenv').config();
 
+const logger = require('pino')({level: process.env.LOG_LEVEL || 'info'});
+
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
 
@@ -341,7 +343,7 @@ const parseDate = (date) => {
     return new Date(date);
   }
   catch(e) {
-    console.error('Error parsing date', e);
+    logger.error('Error parsing date', e);
     return new Date();
   }
 }
@@ -472,8 +474,10 @@ async function commandAdd(client, interaction) {
       //(use same format as in show command)
       interaction.reply({content: `${interaction.member} a ajouté ce haut-fait a accomplir dans sa liste:`, embeds: [embed]});
     }
+    const loggerMsg = `Haut-fait ajouté par ${interaction.user.username}`;
+    logger.info(loggerMsg, achievement);
   } catch (error) {
-    console.error('Erreur lors de la commande create', error);
+    logger.error('Erreur lors de la commande create', error);
   }
 }
 
@@ -484,7 +488,6 @@ async function commandUpdate(client, interaction) {
   const image = interaction.options.getString('image') || '';
   const xp = interaction.options.getInteger('xp') || null;
   const private = interaction.options.getBoolean('private') || null;
-
 
   if(id=='') {
     interaction.reply({content: `L'ID du haut-fait est requis !`, ephemeral: true});
@@ -531,8 +534,10 @@ async function commandUpdate(client, interaction) {
       //announce achievement creation in command channel
       interaction.reply({content: `${interaction.member} a mis a jour le haut-fait:`, embeds: [embed]});
     }
+    const loggerMsg = `Haut-fait modifié par ${interaction.user.username}`;
+    logger.info(loggerMsg, updatedachievement);
   } catch (error) {
-    console.error('Erreur lors de la commande update', error);
+    logger.error('Erreur lors de la commande update', error);
   }
 }
 
@@ -540,21 +545,23 @@ async function commandDelete(client, interaction) {
   //TODO: public announce for deletion ?
   const id = interaction.options.getString('id');
   try {
-     //get user settings for announce public update
-     const settings = await api.getUserSettings(interaction.user.id);
-     const deletedachievement = await api.deleteUserAchievement(interaction.user.id, id);
-     const embed = generateAchievementEmbed(deletedachievement, interaction.user.username);
+    //get user settings for announce public update
+    const settings = await api.getUserSettings(interaction.user.id);
+    const deletedachievement = await api.deleteUserAchievement(interaction.user.id, id);
+    const embed = generateAchievementEmbed(deletedachievement, interaction.user.username);
 
-      if(deletedachievement.private || !settings.ANNOUNCE_DELETE) {
-        //confirm achievement creation in private
-        interaction.reply({content: `Haut fait [${id}] supprimé !`, embeds: [embed], ephemeral: true});
-      }
-      else {
-        //announce achievement creation in command channel
-        interaction.reply({content: `${interaction.member} a supprimé le haut-fait:`, embeds: [embed]});
-      }
+    if(deletedachievement.private || !settings.ANNOUNCE_DELETE) {
+      //confirm achievement creation in private
+      interaction.reply({content: `Haut fait [${id}] supprimé !`, embeds: [embed], ephemeral: true});
+    }
+    else {
+      //announce achievement creation in command channel
+      interaction.reply({content: `${interaction.member} a supprimé le haut-fait:`, embeds: [embed]});
+    }
+    const loggerMsg = `Haut-fait supprimé par ${interaction.user.username}`;
+    logger.info(loggerMsg, deletedachievement);
   } catch (error) {
-    console.error('Erreur lors de la commande delete', error);
+    logger.error('Erreur lors de la commande delete', error);
   }
 }
 
@@ -573,8 +580,10 @@ async function commandShowAchievement(client, interaction) {
     const embed = generateAchievementEmbed(achievement, username);
     const msg = `Voici un haut-fait de ${username}:`;
     interaction.reply({content: msg, embeds: [embed]});
+    const loggerMsg = `Haut-fait affiché par ${interaction.user.username}`;
+    logger.info(loggerMsg, achievement);
   } catch (error) {
-    console.error('Erreur lors de la commande show', error);
+    logger.error('Erreur lors de la commande show', error);
   }
 }
 
@@ -613,8 +622,10 @@ async function commandShowList(client, interaction) {
       + achievements.map(achievement => formatAchievementInList(achievement)).join('');
     
     interaction.reply({content: msg});
+    const loggerMsg = `Liste de haut-fait affichée par ${interaction.user.username}`;
+    logger.info(loggerMsg);
   } catch (error) {
-    console.error('Erreur lors de la commande showList', error);
+    logger.error('Erreur lors de la commande showList', error);
   }
 }
 
@@ -651,10 +662,11 @@ async function commandList(client, interaction) {
     const achievementList = achievements.map(achievement => formatAchievementInList(achievement, true)).join('');
 
     const msg = tagList.length > 0 ? msgWithTagsHeader + achievementList : msgWithoutTagsHeader + achievementList;
-
     interaction.reply({content: msg, ephemeral: true});
+    const loggerMsg = `${interaction.user.username} a listé ses haut-faits`;
+    logger.info(loggerMsg);
   } catch (error) {
-    console.error('Erreur lors de la commande list', error);
+    logger.error('Erreur lors de la commande list', error);
   }
 }
 
@@ -687,9 +699,10 @@ async function commandComplete(client, interaction) {
     } 
     
     interaction.reply({content: `${interaction.member} viens de completer le haut-fait:`, embeds: [embed]});
-    
+    const loggerMsg = `Haut-fait [${id}] complété par ${interaction.user.username}`;
+    logger.info(loggerMsg, completedachievement);
   } catch (error) {
-    console.error('Erreur lors de la commande complete', error);
+    logger.error('Erreur lors de la commande complete', error);
   }
 }
 
@@ -718,8 +731,10 @@ async function commandUndone(client, interaction) {
     }
 
     interaction.reply({content: `${interaction.member} viens d'invalider le haut-fait:`, embeds: [embed]});
+    const loggerMsg = `Haut-fait [${id}] invalidé par ${interaction.user.username}`;
+    logger.info(loggerMsg, undonedachievement);
   } catch (error) {
-    console.error('Erreur lors de la commande uncomplete', error);
+    logger.error('Erreur lors de la commande uncomplete', error);
   }
 }
 
@@ -747,8 +762,11 @@ async function commandUndelete(client, interaction) {
     }
 
     interaction.reply({content: `${interaction.member} viens de restaurer le haut-fait:`, embeds: [embed]});
+
+    const loggerMsg = `Haut-fait [${id}] restauré par ${interaction.user.username}`;
+    logger.info(loggerMsg, achievement);
   } catch (error) {
-    console.error('Erreur lors de la commande undelete', error);
+    logger.error('Erreur lors de la commande undelete', error);
   }
 }
 
@@ -765,10 +783,16 @@ async function commandTagAdd(client, interaction) {
       interaction.reply({content: `Haut-fait [${id}] déjà taggé avec [${tag}] !`, ephemeral: true});
       return;
     }
-    await api.addTagToUserAchievement(interaction.user.id, id, tag);
+
+    const updatedAchievement = await api.addTagToUserAchievement(interaction.user.id, id, tag);
+
     interaction.reply({content: `Haut-fait [${id}] taggé avec [${tag}] !`});
+    
+    //logs
+    const loggerMsg = `L'utilisateur ${interaction.user.username} a taggé l'achievement ${id} avec le tag ${tag}`;
+    logger.info(loggerMsg, updatedAchievement);
   } catch (error) {
-    console.error('Erreur lors de la commande addTag', error);
+    logger.error('Erreur lors de la commande addTag', error);
   }
 }
 
@@ -785,10 +809,12 @@ async function commandTagRemove(client, interaction) {
       interaction.reply({content: `Haut-fait [${id}] n'est pas taggé avec [${tag}] !`, ephemeral: true});
       return;
     }
-    await api.removeTagFromUserAchievement(interaction.user.id, id, tag);
+    const updatedAchievement = await api.removeTagFromUserAchievement(interaction.user.id, id, tag);
     interaction.reply({content: `Haut-fait [${id}] détaggé de [${tag}] !`});
+    const loggerMsg = `L'utilisateur ${interaction.user.username} a enlevé le tag ${tag} du haut-fait ${id}`;
+    logger.info(loggerMsg, updatedAchievement);
   } catch (error) {
-    console.error('Erreur lors de la commande removeTag', error);
+    logger.error('Erreur lors de la commande removeTag', error);
   }
 }
 
@@ -822,8 +848,10 @@ async function commandTagList(client, interaction) {
       + uniqueTags.map(tag => `\n${formatTag(tag)} (${tags[tag]} occurence(s))`).join('');
 
     interaction.reply({content: msg, ephemeral: true});
+    const loggerMsg = `L'utilisateur ${interaction.user.username} a listé les tags`;
+    logger.info(loggerMsg);
   } catch (error) {
-    console.error('Erreur lors de la commande listTags', error);
+    logger.error('Erreur lors de la commande listTags', error);
   }
 }
 
@@ -834,9 +862,11 @@ async function commandSettingsAnnounceCreate(client, interaction) {
     settings.ANNOUNCE_CREATE = value;
     await api.updateUserSettings(interaction.user.id, settings);
     interaction.reply({content: `Paramètre ANNOUNCE_CREATE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+    const loggerMsg = `L'utilisateur ${interaction.user.username} a mis à jour le paramètre ANNOUNCE_CREATE sur ${value.toString().toLocaleUpperCase()}`;
+    logger.info(loggerMsg);
   }
   catch (error) {
-    console.error('Erreur lors de la commande settingsAnnounceCreate', error);
+    logger.error('Erreur lors de la commande settingsAnnounceCreate', error);
   }
 }
 
@@ -847,9 +877,11 @@ async function commandSettingsAnnounceUpdate(client, interaction) {
     settings.ANNOUNCE_UPDATE = value;
     await api.updateUserSettings(interaction.user.id, settings);
     interaction.reply({content: `Paramètre ANNOUNCE_UPDATE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+    const loggerMsg = `L'utilisateur ${interaction.user.username} a mis à jour le paramètre ANNOUNCE_UPDATE sur ${value.toString().toLocaleUpperCase()}`;
+    logger.info(loggerMsg);
   }
   catch (error) {
-    console.error('Erreur lors de la commande settingsAnnounceUpdate', error);
+    logger.error('Erreur lors de la commande settingsAnnounceUpdate', error);
   }
 }
 
@@ -860,9 +892,11 @@ async function commandSettingsAnnounceComplete(client, interaction) {
     settings.ANNOUNCE_COMPLETE = value;
     await api.updateUserSettings(interaction.user.id, settings);
     interaction.reply({content: `Paramètre ANNOUNCE_COMPLETE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+    const loggerMsg = `L'utilisateur ${interaction.user.username} a mis à jour le paramètre ANNOUNCE_COMPLETE sur ${value.toString().toLocaleUpperCase()}`;
+    logger.info(loggerMsg);
   }
   catch (error) {
-    console.error('Erreur lors de la commande settingsAnnounceComplete', error);
+    logger.error('Erreur lors de la commande settingsAnnounceComplete', error);
   }
 }
 
@@ -873,9 +907,11 @@ async function commandSettingsAnnounceUncomplete(client, interaction) {
     settings.ANNOUNCE_UNDONE = value;
     await api.updateUserSettings(interaction.user.id, settings);
     interaction.reply({content: `Paramètre ANNOUNCE_UNDONE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+    const loggerMsg = `L'utilisateur ${interaction.user.username} a mis à jour le paramètre ANNOUNCE_UNDONE sur ${value.toString().toLocaleUpperCase()}`;
+    logger.info(loggerMsg);
   }
   catch (error) {
-    console.error('Erreur lors de la commande settingsAnnounceUncomplete', error);
+    logger.error('Erreur lors de la commande settingsAnnounceUncomplete', error);
   }
 }
 
@@ -886,9 +922,11 @@ async function commandSettingsAnnounceDelete(client, interaction) {
     settings.ANNOUNCE_DELETE = value;
     await api.updateUserSettings(interaction.user.id, settings);
     interaction.reply({content: `Paramètre ANNOUNCE_DELETE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+    const loggerMsg = `L'utilisateur ${interaction.user.username} a mis à jour le paramètre ANNOUNCE_DELETE sur ${value.toString().toLocaleUpperCase()}`;
+    logger.info(loggerMsg);
   }
   catch (error) {
-    console.error('Erreur lors de la commande settingsAnnounceDelete', error);
+    logger.error('Erreur lors de la commande settingsAnnounceDelete', error);
   }
 }
 
@@ -899,21 +937,26 @@ async function commandSettingsAnnounceUndelete(client, interaction) {
     settings.ANNOUNCE_UNDELETE = value;
     await api.updateUserSettings(interaction.user.id, settings);
     interaction.reply({content: `Paramètre ANNOUNCE_UNDELETE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
+    const loggerMsg = `L'utilisateur ${interaction.user.username} a mis à jour le paramètre ANNOUNCE_UNDELETE sur ${value.toString().toLocaleUpperCase()}`;
+    logger.info(loggerMsg);
   }
   catch (error) {
-    console.error('Erreur lors de la commande settingsAnnounceUndelete', error);
+    logger.error('Erreur lors de la commande settingsAnnounceUndelete', error);
   }
 }
 
 async function commandSettingsList(client, interaction) {
   try {
     const settings = await api.getUserSettings(interaction.user.id);
+    //logger.info(loggerMsg);
     const msg =
       `Voici la liste des paramètres:\n${horizontalRule}\n${formatSettings(settings)}`;
     interaction.reply({content: msg, ephemeral: true});
+    const loggerMsg = `L'utilisateur ${interaction.user.username} a demandé la liste des paramètres`;
+    logger.info(loggerMsg, settings);
   }
   catch (error) {
-    console.error('Erreur lors de la commande settingsList', error);
+    logger.error('Erreur lors de la commande settingsList', error);
   }
 }
 

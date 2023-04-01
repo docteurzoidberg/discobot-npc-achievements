@@ -1,7 +1,8 @@
 require('dotenv').config();
 
 const fs = require('fs');
-const logger = require('pino')()
+
+const logger = require('pino')({level: process.env.LOG_LEVEL || 'info'});
 
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 
@@ -13,19 +14,19 @@ const DATA_PATH = process.env.DATA_PATH || './data';
 
 //test bot token is set
 if(!BOT_TOKEN) {
-  logger.error('BOT_TOKEN environment variable not set');
+  logger.fatal('BOT_TOKEN environment variable not set');
   process.exit(1);
 }
 
 //test bot version is set
 if(!BOT_VERSION) {
-	logger.error('BOT_VERSION environment variable not set');
+	logger.fatal('BOT_VERSION environment variable not set');
 	process.exit(1);
 } 
 
 //test data path exists
 if(!fs.existsSync(DATA_PATH)) {
-	logger.error(`DATA_PATH ${DATA_PATH} doesn't exist`);
+	logger.fatal(`DATA_PATH ${DATA_PATH} doesn't exist`);
 	process.exit(1);
 }
 
@@ -36,7 +37,7 @@ try {
 	fs.unlinkSync(testFile);
 }
 catch(err) {
-	logger.error(`DATA_PATH ${DATA_PATH} is not writable`);
+	logger.fatal(`DATA_PATH ${DATA_PATH} is not writable`);
 	process.exit(-1);
 }	
 
@@ -52,7 +53,7 @@ if(fs.existsSync(botVersionFile)) {
 		botVersion = fs.readFileSync(botVersionFile, 'utf8');
 	}
 	catch(err) {
-		logger.error("Can't read the bot .version file");
+		logger.fatal("Can't read the bot .version file");
 		process.exit(1);
 	}
 }
@@ -65,7 +66,7 @@ if(botVersion !== BOT_VERSION) {
 		fs.writeFileSync(botVersionFile, BOT_VERSION);
 	}
 	catch(err) {
-		logger.error("Can't update the .version file");
+		logger.fatal("Can't update the .version file");
 		process.exit(1);
 	}
 }
@@ -116,7 +117,7 @@ for (const file of commandFiles) {
 async function closeGracefully(signal) {
   logger.warn(`Received signal to terminate: ${signal}, closing`);
   client.destroy();
-  process.exit();
+  process.exit(0);
 }
 process.on('SIGINT', closeGracefully)
 process.on('SIGTERM', closeGracefully)
