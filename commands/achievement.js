@@ -479,7 +479,7 @@ async function commandAdd(client, interaction) {
       //(use same format as in show command)
       interaction.reply({content: `${interaction.member} a ajouté ce haut-fait a accomplir dans sa liste:`, embeds: [embed]});
     }
-    const loggerMsg = `Achievement ${achievement.id} added by ${interaction.user.member}`;
+    const loggerMsg = `Achievement ${achievement.id} added by ${interaction.member}`;
     logger.info(loggerMsg, achievement);
   } catch (error) {
     logger.error(error);
@@ -541,7 +541,7 @@ async function commandUpdate(client, interaction) {
       //announce achievement creation in command channel
       interaction.reply({content: `${interaction.member} a mis a jour le haut-fait:`, embeds: [embed]});
     }
-    const loggerMsg = `Achievement ${updatedachievement.id} updated by ${interaction.user.member}`;
+    const loggerMsg = `Achievement ${updatedachievement.id} updated by ${interaction.member}`;
     logger.info(loggerMsg, updatedachievement);
   } catch (error) {
     logger.error(error);
@@ -565,7 +565,7 @@ async function commandDelete(client, interaction) {
       //announce achievement creation in command channel
       interaction.reply({content: `${interaction.member} a supprimé le haut-fait:`, embeds: [embed]});
     }
-    const loggerMsg = `Achievement ${deletedachievement.id} deleted by ${interaction.user.member}`;
+    const loggerMsg = `Achievement ${deletedachievement.id} deleted by ${interaction.member}`;
     logger.info(loggerMsg, deletedachievement);
   } catch (error) {
     logger.error(error);
@@ -586,9 +586,9 @@ async function commandShowAchievement(client, interaction) {
       return;
     }
     const embed = generateAchievementEmbed(achievement, username);
-    const msg = `Voici un haut-fait de ${username}:`;
+    const msg = `Voici un haut-fait de ${interaction.member}:`;
     interaction.reply({content: msg, embeds: [embed]});
-    const loggerMsg = `Achievement ${achievement.id} shown by ${interaction.user.member}`;
+    const loggerMsg = `Achievement ${achievement.id} shown by ${interaction.member}`;
     logger.info(loggerMsg, achievement);
   } catch (error) {
     logger.error(error);
@@ -597,8 +597,6 @@ async function commandShowAchievement(client, interaction) {
 
 //show achievements (filter containing at leach one of the tag(s) if any) in current channel
 async function commandShowList(client, interaction) {
-
-  const username  = client.users.cache.get(interaction.user.id).username; //TODO: check if user exists
 
   //retrieve tags from options (if any)
   const tags = interaction.options.getString('tags') || false;
@@ -613,7 +611,7 @@ async function commandShowList(client, interaction) {
       interaction.reply({content: formatReplyErrorMessage(`Aucun haut-fait a montrer :(`), ephemeral: true});
       return;
     }
-   
+    
     if(tagList.length > 0) {
       //filter achievements by tags
       //!\ achievement.tags may not exists
@@ -628,11 +626,11 @@ async function commandShowList(client, interaction) {
 
     const includedTagsText = tagList.length > 0 ? ` incluants un des tags suivants: ${tagList.map(tag => formatTag(tag)).join(' ')}` : '';
     const msg =
-      `Hauts-faits de ${username}${includedTagsText}:\n${horizontalRule}`
+      `Hauts-faits de ${interaction.member}${includedTagsText}:\n${horizontalRule}`
       + achievements.map(achievement => formatAchievementInList(achievement)).join('');
     
     interaction.reply({content: msg});
-    const loggerMsg = `Achievement list shown by ${interaction.user.member}`;
+    const loggerMsg = `Achievement list shown by ${interaction.member}`;
     logger.info(loggerMsg);
   } catch (error) {
     logger.error(error);
@@ -673,7 +671,7 @@ async function commandList(client, interaction) {
 
     const msg = tagList.length > 0 ? msgWithTagsHeader + achievementList : msgWithoutTagsHeader + achievementList;
     interaction.reply({content: msg, ephemeral: true});
-    const loggerMsg = `${interaction.user.member} listed his achievements`;
+    const loggerMsg = `${interaction.member} listed his achievements`;
     logger.info(loggerMsg);
   } catch (error) {
     logger.error(error);
@@ -711,7 +709,7 @@ async function commandComplete(client, interaction) {
     } 
     
     interaction.reply({content: `${interaction.member} viens de completer le haut-fait:`, embeds: [embed]});
-    const loggerMsg = `Achievement [${id}] done by ${interaction.user.member}`;
+    const loggerMsg = `Achievement [${id}] done by ${interaction.member}`;
     logger.info(loggerMsg, completedachievement);
   } catch (error) {
     logger.error(error);
@@ -745,7 +743,7 @@ async function commandUndone(client, interaction) {
     }
 
     interaction.reply({content: `${interaction.member} viens d'invalider le haut-fait:`, embeds: [embed]});
-    const loggerMsg = `Achievement [${id}] undone by ${interaction.user.member}`;
+    const loggerMsg = `Achievement [${id}] undone by ${interaction.member}`;
     logger.info(loggerMsg, undonedachievement);
   } catch (error) {
     logger.error(error);
@@ -779,7 +777,7 @@ async function commandUndelete(client, interaction) {
 
     interaction.reply({content: `${interaction.member} viens de restaurer le haut-fait:`, embeds: [embed]});
 
-    const loggerMsg = `Achievement [${id}] undeleted by ${interaction.user.member}`;
+    const loggerMsg = `Achievement [${id}] undeleted by ${interaction.member}`;
     logger.info(loggerMsg, achievement);
   } catch (error) {
     logger.error(error);
@@ -874,7 +872,7 @@ async function commandTagList(client, interaction) {
       + uniqueTags.map(tag => `\n${formatTag(tag)} (${tags[tag]} occurence(s))`).join('');
 
     interaction.reply({content: msg, ephemeral: true});
-    const loggerMsg = `User ${interaction.user.member} listed tags`;
+    const loggerMsg = `User ${interaction.member} listed tags`;
     logger.info(loggerMsg);
   } catch (error) {
     logger.error(error);
@@ -888,7 +886,7 @@ async function commandSettingsAnnounceCreate(client, interaction) {
     settings.ANNOUNCE_CREATE = value;
     await api.updateUserSettings(interaction.user.id, settings);
     interaction.reply({content: `Paramètre ANNOUNCE_CREATE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
-    const loggerMsg = `User ${interaction.user.member} set ANNOUNCE_CREATE setting to ${value.toString().toLocaleUpperCase()}`;
+    const loggerMsg = `User ${interaction.member} set ANNOUNCE_CREATE setting to ${value.toString().toLocaleUpperCase()}`;
     logger.info(loggerMsg);
   }
   catch (error) {
@@ -918,7 +916,7 @@ async function commandSettingsAnnounceComplete(client, interaction) {
     settings.ANNOUNCE_COMPLETE = value;
     await api.updateUserSettings(interaction.user.id, settings);
     interaction.reply({content: `Paramètre ANNOUNCE_COMPLETE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
-    const loggerMsg = `User ${interaction.user.member} set ANNOUNCE_COMPLETE setting to ${value.toString().toLocaleUpperCase()}`;
+    const loggerMsg = `User ${interaction.member} set ANNOUNCE_COMPLETE setting to ${value.toString().toLocaleUpperCase()}`;
     logger.info(loggerMsg);
   }
   catch (error) {
@@ -963,7 +961,7 @@ async function commandSettingsAnnounceUndelete(client, interaction) {
     settings.ANNOUNCE_UNDELETE = value;
     await api.updateUserSettings(interaction.user.id, settings);
     interaction.reply({content: `Paramètre ANNOUNCE_UNDELETE mis à jour sur ${value.toString().toLocaleUpperCase()}!`, ephemeral: true});
-    const loggerMsg = `User ${interaction.user.member} set ANNOUNCE_UNDELETE setting to ${value.toString().toLocaleUpperCase()}`;
+    const loggerMsg = `User ${interaction.member} set ANNOUNCE_UNDELETE setting to ${value.toString().toLocaleUpperCase()}`;
     logger.info(loggerMsg);
   }
   catch (error) {
@@ -978,7 +976,7 @@ async function commandSettingsList(client, interaction) {
     const msg =
       `Voici la liste des paramètres:\n${horizontalRule}\n${formatSettings(settings)}`;
     interaction.reply({content: msg, ephemeral: true});
-    const loggerMsg = `User ${interaction.user.member} listed settings`;
+    const loggerMsg = `User ${interaction.member} listed settings`;
     logger.info(loggerMsg, settings);
   }
   catch (error) {
