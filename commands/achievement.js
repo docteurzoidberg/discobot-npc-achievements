@@ -805,7 +805,7 @@ async function commandTagAdd(client, interaction) {
 
     const updatedAchievement = await api.addTagToUserAchievement(interaction.user.id, id, tag);
 
-    interaction.reply({content: `Tag ${formatTag(tag)} ajouté au haut-fait [${id}] !`});
+    interaction.reply({content: `Tag ${formatTag(tag)} ajouté au haut-fait [${id}] !`, ephemeral: true});
     
     //logs
     const loggerMsg = `User ${interaction.user.username} added tag ${tag} to achievement ${id}`;
@@ -834,7 +834,7 @@ async function commandTagRemove(client, interaction) {
       return;
     }
     const updatedAchievement = await api.removeTagFromUserAchievement(interaction.user.id, id, tag);
-    interaction.reply({content: `Tag ${formatTag(tag)} enlevé du haut-fait [${id}] !`});
+    interaction.reply({content: `Tag ${formatTag(tag)} enlevé du haut-fait [${id}] !`, ephemeral: true});
     const loggerMsg = `User ${interaction.user.username} removed ${tag} from achievement ${id}`;
     logger.info(loggerMsg, updatedAchievement);
   } catch (error) {
