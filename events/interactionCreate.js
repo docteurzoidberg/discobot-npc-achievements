@@ -1,3 +1,5 @@
+
+
 //this module handles all the interactions
 module.exports = {
 	name: 'interactionCreate',
@@ -5,7 +7,7 @@ module.exports = {
 		//command
 		if (interaction.isCommand()) {
 
-			console.info(`<${interaction.user.tag}> used command ${interaction.commandName.toUpperCase()} in #${interaction.channel.name.toUpperCase()}`);
+			client.logger.info(`<${interaction.user.tag}> used command ${interaction.commandName.toUpperCase()} in #${interaction.channel.name.toUpperCase()}`);
 			
 			//await interaction.deferReply({ephemeral: false}).catch(()=>{});
 			const command = client.commands.get(interaction.commandName);
@@ -14,7 +16,7 @@ module.exports = {
 			try {
 				await command.execute(client, interaction);
 			} catch (error) {
-				console.error(error);
+				logger.error(error);
 				await interaction.reply({ content: 'Erreur lors de l\'execution de la commande. (Dire a l\'admin de look les logs) !', ephemeral: true });
 			}
 		} 
@@ -23,7 +25,7 @@ module.exports = {
 
       //read auto complete focused field name from interaction for logging
       const focusedFieldName = interaction.options.getFocused(true)?.name.toUpperCase();
-			console.info(`<${interaction.user.tag}> triggered AUTOCOMPLETE for field ${focusedFieldName} in command ${interaction.commandName.toUpperCase()} in #${interaction.channel.name.toUpperCase()}`);
+			client.logger.info(`<${interaction.user.tag}> triggered AUTOCOMPLETE for field ${focusedFieldName} in command ${interaction.commandName.toUpperCase()} in #${interaction.channel.name.toUpperCase()}`);
 		
 			const command = client.commands.get(interaction.commandName);
 			if(!command) return;
@@ -32,12 +34,12 @@ module.exports = {
 			try {
 				await command.autocomplete(client, interaction);
 			} catch (error) {
-				console.error(error);
+				logger.error(error);
 			}
 		} 
     //unhandled interaction
     else {
-			console.warn(`<${interaction.user.tag}> in #${interaction.channel.name.toUpperCase()} triggered an unhandled interaction: ` + interaction.name.toUpperCase());
+		  client.logger.warn(`<${interaction.user.tag}> in #${interaction.channel.name.toUpperCase()} triggered an unhandled interaction: ` + interaction.name.toUpperCase());
 		}
 		return;
 	},

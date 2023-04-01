@@ -19,6 +19,7 @@ WORKDIR /app
 # NODE_MODULES
 COPY package*.json ./
 RUN npm install --production
+RUN npm install -g pino-pretty
 
 # APP
 COPY . .
@@ -30,8 +31,8 @@ ENV BOT_TOKEN $BOT_TOKEN
 ENV BOT_VERSION $BOT_VERSION
 
 # REGISTER bot commands
-RUN node register
+RUN node register | pino-pretty
 
 # RUN
-CMD ["dumb-init", "node", "index"]
+CMD ["dumb-init", "node", "index", "|", "pino-pretty"]
 

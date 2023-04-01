@@ -173,7 +173,6 @@ const commands = new SlashCommandBuilder()
     group
       .setName('tag')
       .setDescription('Gestion des tags/catégories')
-  
 
     //add tag
     .addSubcommand(subcommand =>
@@ -422,7 +421,6 @@ const extractTagList = (tags) => {
   }
 }
 
-
 //return size of characters in string 
 //full width characters (2 bytes) and half width characters (1 byte)
 const mbStrWidth = input => {
@@ -440,11 +438,9 @@ const mbStrWidth = input => {
   return len;
 };
 
-
 /* COMMANDS */
 
 async function commandAdd(client, interaction) {
-  
   const title = interaction.options.getString('title');
   const description = interaction.options.getString('description');
   const image = interaction.options.getString('image') || '';
@@ -482,7 +478,6 @@ async function commandAdd(client, interaction) {
 }
 
 async function commandUpdate(client, interaction) {
-  //TODO: public announce for update ?
   const id = interaction.options.getString('id') || '';
   const title = interaction.options.getString('title')|| '';
   const description = interaction.options.getString('description') || '';

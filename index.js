@@ -1,6 +1,8 @@
 require('dotenv').config();
 
 const fs = require('fs');
+const logger = require('pino')()
+
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 
 //parsing env variables
@@ -11,20 +13,20 @@ const DATA_PATH = process.env.DATA_PATH || './data';
 
 //test bot token is set
 if(!BOT_TOKEN) {
-  console.error('BOT_TOKEN environment variable not set');
-  process.exit(-1);
+  logger.error('BOT_TOKEN environment variable not set');
+  process.exit(1);
 }
 
 //test bot version is set
 if(!BOT_VERSION) {
-	console.error('BOT_VERSION environment variable not set');
-	process.exit(-1);
+	logger.error('BOT_VERSION environment variable not set');
+	process.exit(1);
 } 
 
 //test data path exists
 if(!fs.existsSync(DATA_PATH)) {
-	console.error(`DATA_PATH ${DATA_PATH} doesn't exist`);
-	process.exit(-1);
+	logger.error(`DATA_PATH ${DATA_PATH} doesn't exist`);
+	process.exit(1);
 }
 
 //test data path is writable
@@ -34,7 +36,7 @@ try {
 	fs.unlinkSync(testFile);
 }
 catch(err) {
-	console.error(`DATA_PATH ${DATA_PATH} is not writable`);
+	logger.error(`DATA_PATH ${DATA_PATH} is not writable`);
 	process.exit(-1);
 }	
 
@@ -50,8 +52,8 @@ if(fs.existsSync(botVersionFile)) {
 		botVersion = fs.readFileSync(botVersionFile, 'utf8');
 	}
 	catch(err) {
-		console.error("Can't read the bot .version file");
-		process.exit(-1);
+		logger.error("Can't read the bot .version file");
+		process.exit(1);
 	}
 }
 
@@ -63,8 +65,8 @@ if(botVersion !== BOT_VERSION) {
 		fs.writeFileSync(botVersionFile, BOT_VERSION);
 	}
 	catch(err) {
-		console.error("Can't update the .version file");
-		process.exit(-1);
+		logger.error("Can't update the .version file");
+		process.exit(1);
 	}
 }
 
@@ -78,6 +80,7 @@ const client = new Client({
 });
 
 //populate client with commands, events and everything needed by modules
+client.logger = logger;
 client.commands = new Collection();
 client.updated = updated;
 client.version = BOT_VERSION;
@@ -111,7 +114,7 @@ for (const file of commandFiles) {
 
 //handle process signals
 async function closeGracefully(signal) {
-  console.log(`Received signal to terminate: ${signal}, closing`);
+  logger.warn(`Received signal to terminate: ${signal}, closing`);
   client.destroy();
   process.exit();
 }
