@@ -4,7 +4,9 @@
   "description": "Discord bot to track personnal achievements",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "bot":  "node index.js | pino-pretty",
+    "register":  "node register.js | pino-pretty"
   },
   "author": "DrZoid",
   "license": "MIT",
