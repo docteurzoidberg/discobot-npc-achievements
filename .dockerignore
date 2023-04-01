@@ -3,6 +3,9 @@
 data
 node_modules
 *.log
+*.md
+.vscode
 .gitignore
 .git
-eslintrc.js
+.eslintrc.json
+.prettierrc.json
