@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "bot":  "node index.js | pino-pretty",
-    "register":  "node register.js | pino-pretty"
+    "bot":  "node index.js --no-warning | pino-pretty",
+    "register":  "node register.js --no-warning | pino-pretty"
   },
   "author": "DrZoid",
   "license": "MIT",
