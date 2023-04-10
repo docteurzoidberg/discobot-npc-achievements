@@ -1,4 +1,4 @@
-FROM node:16-alpine3.12
+FROM node:18-alpine
 
 ENV NODE_ENV production
 ENV LANG C.UTF-8

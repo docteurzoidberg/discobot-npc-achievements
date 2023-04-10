@@ -1318,11 +1318,21 @@ async function getCanUncompleteAchievementIds(client, interaction) {
     .map((achievement) => achievement.id.toLocaleUpperCase());
 }
 
+async function getAchievementTags(client, interaction, achievementId) {
+  const achievements = await api.getUserAchievements(interaction.user.id);
+  const achievement = achievements.find(
+    (achievement) => achievement.id === achievementId
+  );
+  if (!achievement) return [];
+  return achievement.tags.map((tag) => tag.toLowerCase());
+}
+
 // get unique tag names from all achievements for auto complete
 async function getAllAchievementTags(client, interaction) {
   const achievements = await api.getUserAchievements(interaction.user.id);
   const tags = [];
   achievements.forEach((achievement) => {
+    if (!achievement.tags) return;
     achievement.tags.forEach((tag) => {
       if (!tags.includes(tag.toLowerCase())) tags.push(tag.toLowerCase());
     });
@@ -1433,7 +1443,17 @@ module.exports = {
         break;
       case 'tag':
       case 'tags':
-        choices = await getAllAchievementTags(client, interaction);
+        if (subcommand === 'remove') {
+          //read id option
+          const achievementId = interaction.options.getString('id');
+          choices = await getAchievementTags(
+            client,
+            interaction,
+            achievementId
+          );
+        } else {
+          choices = await getAllAchievementTags(client, interaction);
+        }
         break;
       default:
         break;

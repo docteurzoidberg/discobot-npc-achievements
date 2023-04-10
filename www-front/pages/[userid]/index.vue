@@ -10,8 +10,6 @@ const route = useRoute();
 
 const userId = route.params.userid || false;
 
-console.log('userId: ', userId);
-
 if (!userId) {
   throw createError({
     statusCode: 404,
@@ -31,8 +29,6 @@ if (!achievements || userachievementserror.value !== null) {
   });
 }
 
-console.log('achievements: ', achievements);
-
 // fetch user settings from service http api
 const { data: userSettings, error: usersettingserror } = await useFetch(
   `/api/${userId}/settings`
@@ -47,16 +43,12 @@ if (!settings || usersettingserror.value !== null) {
   });
 }
 
-console.log('settings: ', settings);
-
 const user = {
   id: userId,
   name: settings.PUBLIC_NAME || '?',
   avatar: settings.PUBLIC_AVATAR || 'https://via.placeholder.com/48',
   settings: { ...settings },
 };
-
-console.log('user: ', user);
 </script>
 
 <template>

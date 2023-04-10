@@ -26,6 +26,49 @@ function _uuid() {
   return result;
 }
 
+function _checkUserId(userId) {
+  //must be set, a valid number, with a minimum length of 18
+  if (!userId) throw new Error('userId is required');
+  if (isNaN(userId)) throw new Error('userId must be a number');
+  if (userId.length < 18)
+    throw new Error('userId must be at least 18 characters');
+}
+
+function _checkAchievementId(achievementId) {
+  //must be set. a valid string, with a length of 3
+  if (!achievementId) throw new Error('achievementId is required');
+  if (typeof achievementId !== 'string')
+    throw new Error('achievementId must be a string');
+  if (achievementId.length !== 3)
+    throw new Error('achievementId must be 3 characters');
+}
+
+function _checkTag(tag) {
+  //must be a valid string, with a minimum length of 1. max length of 20
+  if (!tag) throw new Error('tag is required');
+  if (typeof tag !== 'string') throw new Error('tag must be a string');
+  if (tag.length < 1) throw new Error('tag must be at least 1 character');
+  if (tag.length > 20) throw new Error('tag must be less than 20 characters');
+}
+
+function _checkAchievement(achievement) {
+  //must be an achievement object
+  if (!achievement) throw new Error('achievement is required');
+  if (typeof achievement !== 'object')
+    throw new Error('achievement must be an object');
+  if (!achievement.id) throw new Error('achievement.id is required');
+  if (!achievement.title) throw new Error('achievement.title is required');
+  if (!achievement.description)
+    throw new Error('achievement.description is required');
+}
+
+function _checkUserSettings(settings) {
+  //must be an object
+  if (!settings) throw new Error('settings is required');
+  if (typeof settings !== 'object')
+    throw new Error('settings must be an object');
+}
+
 async function getUsers() {
   const userIds = [];
   const files = await fs.promises.readdir(DB_PATH);
@@ -103,6 +146,8 @@ async function _saveUserDatabase(userId, db) {
 }
 
 async function getUserAchievementById(userId, achievementId) {
+  _checkUserId(userId);
+  _checkAchievementId(achievementId);
   const db = await _loadUserDatabase(userId);
   return db.achievements.find(
     (a) => a.id.toLowerCase() === achievementId.toLowerCase()
@@ -110,6 +155,7 @@ async function getUserAchievementById(userId, achievementId) {
 }
 
 async function getUserAchievements(userId, showDeleted) {
+  _checkUserId(userId);
   const db = await _loadUserDatabase(userId);
   //filter out deleted achievements ?
   if (!showDeleted) return db.achievements.filter((a) => !a.dateDeleted);
@@ -117,6 +163,7 @@ async function getUserAchievements(userId, showDeleted) {
 }
 
 async function getUserPublicAchievements(userId) {
+  _checkUserId(userId);
   const db = await _loadUserDatabase(userId);
   //filter out deleted achievements
   const achievements = db.achievements.filter((a) => !a.dateDeleted);
@@ -125,6 +172,7 @@ async function getUserPublicAchievements(userId) {
 }
 
 async function getUserSettings(userId) {
+  _checkUserId(userId);
   const db = await _loadUserDatabase(userId);
   const settings = {
     ...defaultUserSettings,
@@ -134,6 +182,9 @@ async function getUserSettings(userId) {
 }
 
 async function updateUserSettings(userId, settings) {
+  _checkUserId(userId);
+  _checkUserSettings(settings);
+
   const db = await _loadUserDatabase(userId);
   db.settings = {
     ...defaultUserSettings,
@@ -145,7 +196,9 @@ async function updateUserSettings(userId, settings) {
 }
 
 async function addUserAchievement(userId, achievement) {
-  //TODO: check achievement data
+  _checkUserId(userId);
+  _checkAchievement(achievement);
+
   const db = await _loadUserDatabase(userId);
 
   //check for duplicate id
@@ -182,9 +235,10 @@ async function addUserAchievement(userId, achievement) {
 }
 
 async function updateUserAchievement(userId, achievement) {
-  //TODO: check achievement data
-  const db = await _loadUserDatabase(userId);
+  _checkUserId(userId);
+  _checkAchievement(achievement);
 
+  const db = await _loadUserDatabase(userId);
   let found = -1;
   db.achievements.forEach((element, index) => {
     if (element.id.toLowerCase() === achievement.id.toLowerCase()) {
@@ -205,6 +259,10 @@ async function updateUserAchievement(userId, achievement) {
 }
 
 async function addTagToUserAchievement(userId, achievementId, tag) {
+  _checkUserId(userId);
+  _checkAchievementId(achievementId);
+  _checkTag(tag);
+
   const db = await _loadUserDatabase(userId);
 
   //load achievement

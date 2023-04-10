@@ -9,6 +9,10 @@ async function getUsers(req, res) {
 
 async function getUserAchievementById(req, res) {
   const { userId, achievementId } = req.params;
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  if (!achievementId)
+    return res.status(400).json({ error: 'achievementId is required' });
+
   const achievement = await achievementsApi.getUserAchievementById(
     userId,
     achievementId
@@ -18,49 +22,79 @@ async function getUserAchievementById(req, res) {
 
 async function getUserAchievements(req, res) {
   const { userId } = req.params;
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
   const achievements = await achievementsApi.getUserAchievements(userId);
   return res.status(200).json(achievements);
 }
 
 async function getUserPublicAchievements(req, res) {
   const { userId } = req.params;
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+
   const achievements = await achievementsApi.getUserPublicAchievements(userId);
   return res.status(200).json(achievements);
 }
 
 async function getUserSettings(req, res) {
   const { userId } = req.params;
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+
   const settings = await achievementsApi.getUserSettings(userId);
   return res.status(200).json(settings);
 }
 
 async function updateUserSettings(req, res) {
   const { userId } = req.params;
-  const settings = await achievementsApi.updateUserSettings(userId, req.body);
-  return res.status(200).json(settings);
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  const settings = req.body;
+  if (!settings)
+    return res.status(400).json({ error: 'settings are required' });
+  const savedSettings = await achievementsApi.updateUserSettings(
+    userId,
+    settings
+  );
+  return res.status(200).json(savedSettings);
 }
 
 async function addUserAchievement(req, res) {
   const { userId } = req.params;
-  const achievement = await achievementsApi.addUserAchievement(
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+  const achievement = req.body;
+  if (!achievement)
+    return res.status(400).json({ error: 'achievement is required' });
+
+  const addedAchievement = await achievementsApi.addUserAchievement(
     userId,
-    req.body
+    achievement
   );
-  return res.status(200).json(achievement);
+  return res.status(200).json(addedAchievement);
 }
 
 async function updateUserAchievement(req, res) {
   const { userId, achievementId } = req.params;
-  const achievement = await achievementsApi.updateUserAchievement(
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  if (!achievementId)
+    return res.status(400).json({ error: 'achievementId is required' });
+
+  const achievement = req.body;
+  //TODO: validate achievement
+  if (!achievement)
+    return res.status(400).json({ error: 'achievement is required' });
+
+  const updatedAchievement = await achievementsApi.updateUserAchievement(
     userId,
     achievementId,
-    req.body
+    achievement
   );
-  return res.status(200).json(achievement);
+  return res.status(200).json(updatedAchievement);
 }
 
 async function completeUserAchievement(req, res) {
   const { userId, achievementId } = req.params;
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  if (!achievementId)
+    return res.status(400).json({ error: 'achievementId is required' });
   const achievement = await achievementsApi.completeUserAchievement(
     userId,
     achievementId
@@ -70,6 +104,10 @@ async function completeUserAchievement(req, res) {
 
 async function uncompleteUserAchievement(req, res) {
   const { userId, achievementId } = req.params;
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  if (!achievementId)
+    return res.status(400).json({ error: 'achievementId is required' });
+
   const achievement = await achievementsApi.uncompleteUserAchievement(
     userId,
     achievementId
@@ -79,6 +117,10 @@ async function uncompleteUserAchievement(req, res) {
 
 async function deleteUserAchievement(req, res) {
   const { userId, achievementId } = req.params;
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  if (!achievementId)
+    return res.status(400).json({ error: 'achievementId is required' });
+
   const achievement = await achievementsApi.deleteUserAchievement(
     userId,
     achievementId
@@ -88,6 +130,10 @@ async function deleteUserAchievement(req, res) {
 
 async function undeleteUserAchievement(req, res) {
   const { userId, achievementId } = req.params;
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  if (!achievementId)
+    return res.status(400).json({ error: 'achievementId is required' });
+
   const achievement = await achievementsApi.undeleteUserAchievement(
     userId,
     achievementId
@@ -95,24 +141,42 @@ async function undeleteUserAchievement(req, res) {
   return res.status(200).json(achievement);
 }
 
+//body contains: { tag: 'tagname' }
 async function addTagToUserAchievement(req, res) {
   const { userId, achievementId } = req.params;
-  const tag = await achievementsApi.addTagToUserAchievement(
+  const tag = req.body.tag;
+
+  console.log('addTagToUserAchievement', userId, achievementId, tag);
+
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  if (!achievementId)
+    return res.status(400).json({ error: 'achievementId is required' });
+  if (!req.body.tag) return res.status(400).json({ error: 'tag is required' });
+
+  const updatedAchievement = await achievementsApi.addTagToUserAchievement(
     userId,
     achievementId,
-    req.body
+    tag
   );
-  return res.status(200).json(tag);
+  return res.status(200).json(updatedAchievement);
 }
 
+//body contains: { tag: 'tagname' }
 async function removeTagFromUserAchievement(req, res) {
   const { userId, achievementId } = req.params;
-  const tag = await achievementsApi.removeTagFromUserAchievement(
+  const tag = req.body.tag;
+
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  if (!achievementId)
+    return res.status(400).json({ error: 'achievementId is required' });
+  if (!req.body.tag) return res.status(400).json({ error: 'tag is required' });
+
+  const updatedAchievement = await achievementsApi.removeTagFromUserAchievement(
     userId,
     achievementId,
-    req.body
+    tag
   );
-  return res.status(200).json(tag);
+  return res.status(200).json(updatedAchievement);
 }
 
 const router = require('express').Router();

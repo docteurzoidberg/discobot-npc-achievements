@@ -14,7 +14,6 @@ if (!userId) {
     message: 'User not found',
   });
 }
-console.log('userId: ', userId);
 
 const achievementId = route.params.achievementid || false;
 if (!achievementId) {
@@ -24,14 +23,9 @@ if (!achievementId) {
   });
 }
 
-console.log('achievementId: ', achievementId);
-
 const fetchUrl = `/api/${userId}/${achievementId}`;
-console.log('fetchUrl: ', fetchUrl);
 
 const { data: achievement, error: error } = await useFetch(fetchUrl);
-
-console.log('achievement: ', achievement);
 
 if (!achievement || error.value !== null) {
   throw createError({

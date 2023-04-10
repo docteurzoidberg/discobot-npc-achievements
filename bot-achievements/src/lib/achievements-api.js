@@ -35,46 +35,56 @@ async function addUserAchievement(userId, data) {
   return json;
 }
 
+//POST /users/:userId/achievements/:achievementId/complete
 async function completeUserAchievement(userId, achievementId) {
-  const response = await fetch(
-    `${API_URL}/${userId}/achievements/${achievementId}/complete`,
-    {
-      method: 'POST',
-    }
-  );
+  const url = `${API_URL}/${userId}/achievements/${achievementId}/complete`;
+  const response = await fetch(url, {
+    method: 'POST',
+  });
   const json = await response.json();
   return json;
 }
 
+//POST /users/:userId/achievements/:achievementId/uncomplete
 async function uncompleteUserAchievement(userId, achievementId) {
-  const response = await fetch(
-    `${API_URL}/${userId}/achievements/${achievementId}/uncomplete`,
-    {
-      method: 'POST',
-    }
-  );
+  const url = `${API_URL}/${userId}/achievements/${achievementId}/uncomplete`;
+  const response = await fetch(url, {
+    method: 'POST',
+  });
   const json = await response.json();
   return json;
 }
 
+//POST /users/:userId/achievements/:achievementId/tags
 async function addTagToUserAchievement(userId, achievementId, tag) {
-  const response = await fetch(
-    `${API_URL}/${userId}/achievements/${achievementId}/tags/${tag}`,
-    {
-      method: 'POST',
-    }
-  );
+  const url = `${API_URL}/${userId}/achievements/${achievementId}/tags`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    //BODY contains tag object { tag: 'tagname' }
+    body: JSON.stringify({
+      tag: tag,
+    }),
+  });
   const json = await response.json();
   return json;
 }
 
+//DELETE /users/:userId/achievements/:achievementId/tags
 async function removeTagFromUserAchievement(userId, achievementId, tag) {
-  const response = await fetch(
-    `${API_URL}/${userId}/achievements/${achievementId}/tags/${tag}`,
-    {
-      method: 'DELETE',
-    }
-  );
+  const url = `${API_URL}/${userId}/achievements/${achievementId}/tags`;
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    //BODY contains tag object { tag: 'tagname' }
+    body: JSON.stringify({
+      tag: tag,
+    }),
+  });
   const json = await response.json();
   return json;
 }
