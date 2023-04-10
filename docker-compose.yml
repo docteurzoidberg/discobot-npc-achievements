@@ -1,0 +1,55 @@
+version: "3"
+networks:
+  npc-achievements:
+
+services:
+  api:
+    image: npc-achievements-api
+    hostname: npc-achievements-api
+    container_name: npc-achievements-api
+    tty: true
+    build:
+      context: ./www-api
+    environment:
+      - DATA_PATH=/data
+    networks:
+      - npc-achievements
+    volumes:
+      - ./www-api/data:/data
+    restart: unless-stopped
+
+  bot:
+    image: npc-achievements-bot
+    hostname: npc-achievements-bot
+    container_name: npc-achievements-bot
+    tty: true
+    build:
+      context: ./bot-achievements
+    env_file:
+      - ./bot-achievements/.env
+    environment:
+      #overide api url in env file to use the docker container
+      - API_URL=http://npc-achievements-api:5000/achievement
+    networks:
+      - npc-achievements
+    volumes:
+      - ./bot-achievements/data:/data
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  www:
+    image: npc-achievements-www
+    hostname: npc-achievements-www
+    container_name: npc-achievements-www
+    build:
+      context: ./www-front
+    environment:
+      - NUXT_PUBLIC_API_URL=http://npc-achievements-api:5000
+    networks:
+      - npc-achievements
+    ports:
+      - 3000:3000
+    depends_on:
+      - api
+    restart: unless-stopped

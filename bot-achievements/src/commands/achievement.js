@@ -6,7 +6,7 @@ const logger = require('pino')({ level: process.env.LOG_LEVEL || 'info' });
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
 
-const api = require('../lib/api');
+const api = require('../lib/achievements-api');
 
 const commands = new SlashCommandBuilder()
   .setName('achievement')
@@ -292,6 +292,22 @@ const commands = new SlashCommandBuilder()
             option.setName('value').setDescription('Valeur')
           )
       )
+      .addSubcommand((subcommand) =>
+        subcommand
+          .setName('public_name')
+          .setDescription('Définir le nom affiché hors discord')
+          .addStringOption((option) =>
+            option.setName('value').setDescription('Valeur')
+          )
+      )
+      .addSubcommand((subcommand) =>
+        subcommand
+          .setName('public_avatar')
+          .setDescription("Définir l'avatar affiché hors discord")
+          .addStringOption((option) =>
+            option.setName('value').setDescription('Valeur')
+          )
+      )
   );
 
 const shiftCharCode = (Δ) => (c) => String.fromCharCode(c.charCodeAt(0) + Δ);
@@ -354,7 +370,11 @@ const formatSettings = (settings) => {
   const announceUndone = settings.ANNOUNCE_UNDONE ? '✅' : '❌';
   const announceDelete = settings.ANNOUNCE_DELETE ? '✅' : '❌';
   const announceUndelete = settings.ANNOUNCE_UNDELETE ? '✅' : '❌';
-  return `Annoncer:\n${announceCreate} **Création**\n${announceUpdate} **Modification**\n${announceComplete} **Validation**\n${announceUndone} **Annulation de validation**\n${announceDelete} **Suppression**\n${announceUndelete} **Annulation de suppression** `;
+
+  const announceSettingsText = `Annoncer:\n${announceCreate} **Création**\n${announceUpdate} **Modification**\n${announceComplete} **Validation**\n${announceUndone} **Annulation de validation**\n${announceDelete} **Suppression**\n${announceUndelete} **Annulation de suppression** `;
+  const publicSettingsText = `Public:\n${settings.PUBLIC_NAME} **Nom**\n${settings.PUBLIC_AVATAR} **Avatar**`;
+
+  return `${announceSettingsText}\n${publicSettingsText}`;
 };
 
 // generate embed for achievement
@@ -722,7 +742,7 @@ async function commandShowList(client, interaction) {
       .map((achievement) => formatAchievementInList(achievement))
       .join('')}`;
 
-    interaction.reply({ content: msg });
+    interaction.reply({ content: msg, split: {} });
     const loggerMsg = `Achievement list shown by ${interaction.member}`;
     logger.info(loggerMsg);
   } catch (error) {
@@ -1222,6 +1242,44 @@ async function commandSettingsList(client, interaction) {
   }
 }
 
+async function commandSettingsPublicName(client, interaction) {
+  const value = interaction.options.getString('value');
+  try {
+    const settings = await api.getUserSettings(interaction.user.id);
+    settings.PUBLIC_NAME = value;
+    await api.updateUserSettings(interaction.user.id, settings);
+    interaction.reply({
+      content: `Paramètre PUBLIC_NAME mis à jour sur ${value}!`,
+      ephemeral: true,
+    });
+    const loggerMsg = `User ${
+      interaction.member
+    } set PUBLIC_NAME setting to ${value.toString().toLocaleUpperCase()}`;
+    logger.info(loggerMsg);
+  } catch (error) {
+    logger.error(error);
+  }
+}
+
+async function commandSettingsPublicAvatar(client, interaction) {
+  const value = interaction.options.getString('value');
+  try {
+    const settings = await api.getUserSettings(interaction.user.id);
+    settings.PUBLIC_AVATAR = value;
+    await api.updateUserSettings(interaction.user.id, settings);
+    interaction.reply({
+      content: `Paramètre PUBLIC_AVATAR mis à jour sur ${value}!`,
+      ephemeral: true,
+    });
+    const loggerMsg = `User ${
+      interaction.member
+    } set PUBLIC_AVATAR setting to ${value.toString().toLocaleUpperCase()}`;
+    logger.info(loggerMsg);
+  } catch (error) {
+    logger.error(error);
+  }
+}
+
 // get ids from all achievements for auto complete
 async function getAllAchievementIds(client, interaction) {
   const achievements = await api.getUserAchievements(interaction.user.id);
@@ -1263,16 +1321,12 @@ async function getCanUncompleteAchievementIds(client, interaction) {
 // get unique tag names from all achievements for auto complete
 async function getAllAchievementTags(client, interaction) {
   const achievements = await api.getUserAchievements(interaction.user.id);
-  const tags = achievements.reduce((acc, achievement) => {
-    if (achievement.tags) {
-      achievement.tags.forEach((tag) => {
-        if (!acc.includes(tag)) {
-          acc.push(tag.toLocaleUpperCase());
-        }
-      });
-    }
-    return acc;
-  }, []);
+  const tags = [];
+  achievements.forEach((achievement) => {
+    achievement.tags.forEach((tag) => {
+      if (!tags.includes(tag.toLowerCase())) tags.push(tag.toLowerCase());
+    });
+  });
   return tags;
 }
 
@@ -1301,6 +1355,10 @@ module.exports = {
             return await commandSettingsAnnounceUndelete(client, interaction);
           case 'announce_undone':
             return await commandSettingsAnnounceUncomplete(client, interaction);
+          case 'public_name':
+            return await commandSettingsPublicName(client, interaction);
+          case 'public_avatar':
+            return await commandSettingsPublicAvatar(client, interaction);
           default:
             interaction.reply({
               content: `Désolé mais, la commande ${subcommand} n'existe pas ou n'est pas encore implementée :(`,

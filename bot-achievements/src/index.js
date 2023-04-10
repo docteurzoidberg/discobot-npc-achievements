@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const fs = require('fs');
+const basePath = __dirname;
 
 const logger = require('pino')({ level: process.env.LOG_LEVEL || 'info' });
 
@@ -10,7 +11,8 @@ const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const BOT_INVISIBLE = process.env.BOT_INVISIBLE === 'true';
 const BOT_TOKEN = process.env.BOT_TOKEN || false;
 const BOT_VERSION = process.env.BOT_VERSION || false;
-const DATA_PATH = process.env.DATA_PATH || './data';
+const DATA_PATH = process.env.DATA_PATH || 'data';
+const API_URL = process.env.API_URL || false;
 
 //test bot token is set
 if (!BOT_TOKEN) {
@@ -21,6 +23,18 @@ if (!BOT_TOKEN) {
 //test bot version is set
 if (!BOT_VERSION) {
   logger.fatal('BOT_VERSION environment variable not set');
+  process.exit(1);
+}
+
+//test data path is set
+if (!DATA_PATH) {
+  logger.fatal('DATA_PATH environment variable not set');
+  process.exit(1);
+}
+
+//test api url is set
+if (!API_URL) {
+  logger.fatal('API_URL environment variable not set');
   process.exit(1);
 }
 
@@ -96,10 +110,10 @@ client.config = {
 
 //load event modules
 const eventFiles = fs
-  .readdirSync('./events')
+  .readdirSync(basePath + '/events')
   .filter((file) => file.endsWith('.js'));
 for (const file of eventFiles) {
-  const event = require(`./events/${file}`);
+  const event = require(`${basePath}/events/${file}`);
   if (event.once) {
     client.once(event.name, (...args) => event.execute(client, ...args));
   } else {
@@ -109,10 +123,10 @@ for (const file of eventFiles) {
 
 //load command modules
 const commandFiles = fs
-  .readdirSync('./commands')
+  .readdirSync(basePath + '/commands')
   .filter((file) => file.endsWith('.js'));
 for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
+  const command = require(`${basePath}/commands/${file}`);
   // Set a new item in the Collection
   // With the key as the command name and the value as the exported module
   client.commands.set(command.data.name, command);

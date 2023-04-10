@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const fs = require('fs');
 
-const DB_PATH = process.env.DATABASE_PATH || './data';
+const DB_PATH = (process.env.DATA_PATH || './data') + '/achievements';
 const DB_VERSION = 2;
 
 const defaultUserSettings = {
@@ -12,6 +12,9 @@ const defaultUserSettings = {
   ANNOUNCE_UPDATE: true,
   ANNOUNCE_UNDONE: true,
   ANNOUNCE_UNDELETE: true,
+  PUBLIC_NAME: 'John Doe',
+  PUBLIC_AVATAR: 'https://i.imgur.com/0y0y0y0.png',
+  PUBLIC_MEMBER: '<Member not set>',
 };
 
 function _uuid() {
@@ -21,6 +24,31 @@ function _uuid() {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+}
+
+async function getUsers() {
+  const userIds = [];
+  const files = await fs.promises.readdir(DB_PATH);
+  files.forEach((file) => {
+    if (file.endsWith('.json')) {
+      const userId = file.substring(0, file.length - 5);
+      userIds.push(userId);
+    }
+  });
+
+  //for each user load the database and get the user settings
+  const users = [];
+  for (let i = 0; i < userIds.length; i++) {
+    const db = await _loadUserDatabase(userIds[i]);
+    users.push({
+      id: userIds[i],
+      dateCreated: db.dateCreated,
+      name: db.settings.PUBLIC_NAME || 'John Doe',
+      avatar: db.settings.PUBLIC_AVATAR || 'https://i.imgur.com/0y0y0y0.png',
+      member: db.settings.PUBLIC_MEMBER || '<Member not set>',
+    });
+  }
+  return users;
 }
 
 async function _loadUserDatabase(userId) {
@@ -86,6 +114,14 @@ async function getUserAchievements(userId, showDeleted) {
   //filter out deleted achievements ?
   if (!showDeleted) return db.achievements.filter((a) => !a.dateDeleted);
   return db.achievements;
+}
+
+async function getUserPublicAchievements(userId) {
+  const db = await _loadUserDatabase(userId);
+  //filter out deleted achievements
+  const achievements = db.achievements.filter((a) => !a.dateDeleted);
+  //filter out private achievements
+  return achievements.filter((a) => !a.private);
 }
 
 async function getUserSettings(userId) {
@@ -349,8 +385,10 @@ async function undeleteUserAchievement(userId, achievementId) {
 }
 
 module.exports = {
+  getUsers,
   getUserAchievementById,
   getUserAchievements,
+  getUserPublicAchievements,
   getUserSettings,
   updateUserSettings,
   addUserAchievement,

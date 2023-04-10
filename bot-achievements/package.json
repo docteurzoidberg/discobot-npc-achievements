@@ -4,9 +4,8 @@
   "description": "Discord bot to track personnal achievements",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "bot": "node index.js --no-warning | pino-pretty",
-    "register": "node register.js --no-warning | pino-pretty"
+    "bot": "node src/index.js --no-warning | pino-pretty",
+    "register": "node src/register.js --no-warning | pino-pretty"
   },
   "author": "DrZoid",
   "license": "MIT",
@@ -15,6 +14,7 @@
     "discord-api-types": "^0.37.37",
     "discord.js": "^14.8.0",
     "dotenv": "^16.0.3",
+    "node-fetch": "^2.6.9",
     "pino": "^8.11.0",
     "uuid": "^9.0.0"
   },
