@@ -353,6 +353,41 @@ const formatDate = (date) => {
   )}`;
 };
 
+//choice object for autocomplete
+//{
+//  name: 'AAA - First Achievement',
+//  value: 'aaa'
+//}
+function _formatAchievementAutoComplete(achievement) {
+  return {
+    name: `${achievement.id} - ${achievement.title}`,
+    value: achievement.id.toLocaleUpperCase(),
+  };
+}
+
+//choice object for autocomplete
+//if count provided:
+//{
+//  name: 'AAA: 10',
+//  value: 'aaa'
+//}
+//else:
+//{
+//  name: 'AAA',
+//  value: 'aaa'
+//}
+function _formatTagAutoComplete(tag, count) {
+  if (count)
+    return {
+      name: `${tag.toLocaleUpperCase()}: ${count}`,
+      value: tag.toLowerCase(),
+    };
+  return {
+    name: `${tag.toLocaleUpperCase()}`,
+    value: tag.toLowerCase(),
+  };
+}
+
 // parse iso string to date
 const parseDate = (date) => {
   try {
@@ -363,6 +398,20 @@ const parseDate = (date) => {
   }
 };
 
+//format user settings for display in message
+/*
+Annoncer:
+✅ **Création**
+❌ **Modification**
+❌ **Validation**
+❌ **Annulation de validation**
+❌ **Suppression**
+❌ **Annulation de suppression**
+Public:
+**Nom**: John Zoidberg
+**Avatar**: <https://cdn.discordapp.com/avatars/123456789012345678/123456789012345678.png>
+*/
+
 const formatSettings = (settings) => {
   const announceCreate = settings.ANNOUNCE_CREATE ? '✅' : '❌';
   const announceUpdate = settings.ANNOUNCE_UPDATE ? '✅' : '❌';
@@ -372,9 +421,9 @@ const formatSettings = (settings) => {
   const announceUndelete = settings.ANNOUNCE_UNDELETE ? '✅' : '❌';
 
   const announceSettingsText = `Annoncer:\n${announceCreate} **Création**\n${announceUpdate} **Modification**\n${announceComplete} **Validation**\n${announceUndone} **Annulation de validation**\n${announceDelete} **Suppression**\n${announceUndelete} **Annulation de suppression** `;
-  const publicSettingsText = `Public:\n${settings.PUBLIC_NAME} **Nom**\n${settings.PUBLIC_AVATAR} **Avatar**`;
+  const publicSettingsText = `Public:\n**Nom**: ${settings.PUBLIC_NAME}\n**Avatar**: ${settings.PUBLIC_AVATAR}`;
 
-  return `${announceSettingsText}\n${publicSettingsText}`;
+  return `${announceSettingsText}\n\n${publicSettingsText}`;
 };
 
 // generate embed for achievement
@@ -596,6 +645,7 @@ async function commandUpdate(client, interaction) {
     const settings = await api.getUserSettings(interaction.user.id);
     const updatedachievement = await api.updateUserAchievement(
       interaction.user.id,
+      achievement.id,
       newAchievement
     );
     const embed = generateAchievementEmbed(
@@ -1281,63 +1331,87 @@ async function commandSettingsPublicAvatar(client, interaction) {
 }
 
 // get ids from all achievements for auto complete
-async function getAllAchievementIds(client, interaction) {
+async function autocompleteAllAchievementIds(client, interaction) {
   const achievements = await api.getUserAchievements(interaction.user.id);
   // order by dateCreated desc
   achievements.sort((a, b) => b.dateCreated - a.dateCreated);
-  return achievements.map((achievement) => achievement.id);
+  return achievements.map((achievement) =>
+    _formatAchievementAutoComplete(achievement)
+  );
 }
 
 // get all not completed achievements and returns only ids for auto complete
-async function getCanCompleteAchievementIds(client, interaction) {
+async function autocompleteCanCompleteAchievementIds(client, interaction) {
   const achievements = await api.getUserAchievements(interaction.user.id);
   // order by dateCreated asc
   achievements.sort((a, b) => a.dateCreated - b.dateCreated);
   return achievements
     .filter((achievement) => !achievement.dateCompleted)
-    .map((achievement) => achievement.id.toLocaleUpperCase());
+    .map((achievement) => _formatAchievementAutoComplete(achievement));
 }
 
 // get all completed achievements and returns only ids for auto complete
-async function getCanUndeleteAchievementIds(client, interaction) {
+async function autocompleteCanUndeleteAchievementIds(client, interaction) {
   const achievements = await api.getUserAchievements(interaction.user.id, true);
-  // order by dateDeleted desc
+  //most recent deleted first
   achievements.sort((a, b) => b.dateDeleted - a.dateDeleted);
   return achievements
     .filter((achievement) => achievement.dateDeleted != null)
-    .map((achievement) => achievement.id.toLocaleUpperCase());
+    .map((achievement) => _formatAchievementAutoComplete(achievement));
 }
 
 // get all completed achievements and returns only ids for auto complete
-async function getCanUncompleteAchievementIds(client, interaction) {
+async function autocompleteCanUncompleteAchievementIds(client, interaction) {
   const achievements = await api.getUserAchievements(interaction.user.id);
-  // order by dateCompleted desc
+  //most recent completed first
   achievements.sort((a, b) => b.dateCompleted - a.dateCompleted);
   return achievements
     .filter((achievement) => achievement.dateCompleted)
-    .map((achievement) => achievement.id.toLocaleUpperCase());
+    .map((achievement) => _formatAchievementAutoComplete(achievement));
 }
 
-async function getAchievementTags(client, interaction, achievementId) {
+// get one achievement tags for the remove tag command auto complete
+async function autocompleteOneAchievementTags(
+  client,
+  interaction,
+  achievementId
+) {
   const achievements = await api.getUserAchievements(interaction.user.id);
   const achievement = achievements.find(
     (achievement) => achievement.id === achievementId
   );
   if (!achievement) return [];
-  return achievement.tags.map((tag) => tag.toLowerCase());
+  if (!achievement.tags) return [];
+  return achievement.tags.map((tag) => {
+    return _formatTagAutoComplete(tag);
+  });
 }
 
 // get unique tag names from all achievements for auto complete
-async function getAllAchievementTags(client, interaction) {
+async function autocompleteAllAchievementTags(client, interaction) {
   const achievements = await api.getUserAchievements(interaction.user.id);
-  const tags = [];
+
+  //count tag occurences to sort by most used
+  const tagOccurences = {};
+
   achievements.forEach((achievement) => {
     if (!achievement.tags) return;
     achievement.tags.forEach((tag) => {
-      if (!tags.includes(tag.toLowerCase())) tags.push(tag.toLowerCase());
+      if (!tagOccurences[tag.toLowerCase()]) {
+        tagOccurences[tag.toLowerCase()] = 0;
+      }
+      tagOccurences[tag.toLowerCase()]++;
     });
   });
-  return tags;
+
+  //sort by most used
+  const tags = Object.keys(tagOccurences).sort(
+    (a, b) => tagOccurences[b] - tagOccurences[a]
+  );
+
+  return tags.map((tag) => {
+    return _formatTagAutoComplete(tag, tagOccurences[tag]);
+  });
 }
 
 module.exports = {
@@ -1430,40 +1504,53 @@ module.exports = {
     let choices = [];
     switch (focusedOption.name) {
       case 'id':
-        // check subcommand name to know which list to return
         if (subcommand === 'complete') {
-          choices = await getCanCompleteAchievementIds(client, interaction);
+          choices = await autocompleteCanCompleteAchievementIds(
+            client,
+            interaction
+          );
         } else if (subcommand === 'undone') {
-          choices = await getCanUncompleteAchievementIds(client, interaction);
+          choices = await autocompleteCanUncompleteAchievementIds(
+            client,
+            interaction
+          );
         } else if (subcommand === 'undelete') {
-          choices = await getCanUndeleteAchievementIds(client, interaction);
+          choices = await autocompleteCanUndeleteAchievementIds(
+            client,
+            interaction
+          );
         } else {
-          choices = await getAllAchievementIds(client, interaction);
+          choices = await autocompleteAllAchievementIds(client, interaction);
         }
         break;
       case 'tag':
       case 'tags':
-        if (subcommand === 'remove') {
-          //read id option
-          const achievementId = interaction.options.getString('id');
-          choices = await getAchievementTags(
-            client,
-            interaction,
-            achievementId
-          );
-        } else {
-          choices = await getAllAchievementTags(client, interaction);
-        }
+        const achievementId = interaction.options.getString('id'); //can be null/not present
+        choices =
+          subcommand === 'remove' && achievementId
+            ? await autocompleteOneAchievementTags(
+                client,
+                interaction,
+                achievementId
+              )
+            : await autocompleteAllAchievementTags(client, interaction);
         break;
       default:
         break;
     }
 
-    const filtered = choices.filter((choice) =>
-      choice.startsWith(focusedOption.value)
-    );
-    await interaction.respond(
-      filtered.map((choice) => ({ name: choice, value: choice }))
-    );
+    const filtered = choices.filter((choice) => {
+      if (typeof choice === 'object' && choice.hasOwnProperty('name')) {
+        //typed value can be any part of the choice.name. case insensitive (fuzzy search like)
+        return choice.name
+          .toLowerCase()
+          .includes(focusedOption.value.toLowerCase());
+      } else if (typeof choice === 'string') {
+        //typed value can be any part of the choice. case insensitive (fuzzy search like)
+        return choice.toLowerCase().includes(focusedOption.value.toLowerCase());
+      } else return false;
+    });
+
+    await interaction.respond(filtered);
   },
 };
