@@ -13,7 +13,7 @@ WORKDIR /app
 
 # NODE_MODULES
 COPY package*.json ./
-RUN npm install --production
+RUN npm install --omit=dev          
 RUN npm install -g pino-pretty
 
 # APP
