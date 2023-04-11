@@ -1,6 +1,6 @@
 //index return 403 for crowdsec actions when scanning the service
 const noIndexHandler = (req, res) => {
-  return res.status(403).end('Forbidden: no index');
+  return res.status(403).send('Forbidden: no index');
 };
 
 const notFoundHandler = (req, res) => {
@@ -8,7 +8,8 @@ const notFoundHandler = (req, res) => {
 };
 
 const errorHandler = (err, req, res, next) => {
-  console.error(err.stack);
+  req.error(err);
+  req.debug(req.stack);
   res.status(500).send('Something broke!');
 };
 

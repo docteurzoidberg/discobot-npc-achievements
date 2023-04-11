@@ -621,7 +621,7 @@ async function commandUpdate(client, interaction) {
   }
 
   const newAchievement = {
-    id,
+    id: achievement.id,
   };
 
   if (title != '') {

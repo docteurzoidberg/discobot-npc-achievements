@@ -4,7 +4,92 @@ const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const morgan = require('morgan');
+const randomUUID = require('crypto').randomUUID;
+const pino = require('pino');
+const logger = require('pino-http')({
+  // Reuse an existing logger instance
+  logger: pino(),
+
+  // Define a custom request id function
+  genReqId: function (req, res) {
+    const existingID = req.id ?? req.headers['x-request-id'];
+    if (existingID) return existingID;
+    id = randomUUID();
+    res.setHeader('X-Request-Id', id);
+    return id;
+  },
+
+  // Define custom serializers
+  serializers: {
+    err: pino.stdSerializers.err,
+    req: pino.stdSerializers.req,
+    res: pino.stdSerializers.res,
+  },
+
+  // Set to `false` to prevent standard serializers from being wrapped.
+  wrapSerializers: true,
+
+  // Define a custom logger level
+  customLogLevel: function (req, res, err) {
+    if (res.statusCode === 404 && req.url === '/favicon.ico') {
+      return 'silent';
+    } else if (res.statusCode >= 400 && res.statusCode < 500) {
+      return 'warn';
+    } else if (res.statusCode >= 500 || err) {
+      return 'error';
+    }
+
+    //else if (res.statusCode >= 300 && res.statusCode < 400) {
+    //return 'silent';
+    //}
+    return 'info';
+  },
+
+  // Define a custom success message
+  //customSuccessMessage: function (req, res) {
+  //  if (res.statusCode === 404) {
+  //    return 'resource not found';
+  //  }
+  //  return `${req.method} completed`;
+  //},
+
+  // Define a custom receive message
+  //customReceivedMessage: function (req, res) {
+  //  return 'request received: ' + req.method;
+  //},
+
+  // customReceivedMessage: function (req, res) {
+  //  return `${req.method} ${req.url} ${req.headers['x-request-id']}`;
+  //},
+
+  customSuccessMessage: function (req, res) {
+    return `${req.method} ${req.url} ${res.statusCode}`;
+  },
+
+  // Define a custom error message
+  customErrorMessage: function (req, res, err) {
+    return `${req.method} ${req.url} ${res.statusCode} ${err.message}`;
+  },
+  //  return 'request errored with status code: ' + res.statusCode;
+  //},
+
+  // Override attribute keys for the log object
+  customAttributeKeys: {
+    req: 'request',
+    res: 'response',
+    err: 'error',
+    responseTime: 'timeTaken',
+  },
+
+  // Define additional custom request properties
+  customProps: function (req, res) {
+    return {
+      customProp: req.customProp,
+      // user request-scoped data is in res.locals for express applications
+      customProp2: res.locals.myCustomData,
+    };
+  },
+});
 
 const middlewares = require('./middlewares/common');
 const achievements = require('./routes/achievements');
@@ -17,7 +102,7 @@ if (!fs.existsSync(datapath + '/achievements'))
   fs.mkdirSync(datapath + '/achievements');
 
 const app = express();
-app.use(morgan('combined'));
+app.use(logger);
 
 //allow all origin for other docker containers
 app.use(
@@ -36,7 +121,7 @@ app.use('/achievement', achievements);
 app.use(middlewares.errorHandler);
 
 app.listen(api_port, () =>
-  console.log(
+  pino().info(
     `npc-achievements-internal-api listening on port http://${hostname}:${api_port}/ !`
   )
 );

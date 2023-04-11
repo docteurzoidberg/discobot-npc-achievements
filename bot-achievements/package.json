@@ -4,6 +4,7 @@
   "description": "Discord bot to track personnal achievements",
   "main": "index.js",
   "scripts": {
+    "dev": "nodemon src/index.js --no-warning | pino-pretty",
     "bot": "node src/index.js --no-warning | pino-pretty",
     "register": "node src/register.js --no-warning | pino-pretty"
   },
@@ -22,6 +23,8 @@
     "eslint": "^8.37.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.27.5",
-    "prettier": "^2.8.7"
+    "prettier": "^2.8.7",
+    "nodemon": "^2.0.12",
+    "pino-pretty": "^6.0.0"
   }
 }

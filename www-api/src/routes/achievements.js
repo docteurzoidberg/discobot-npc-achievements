@@ -84,7 +84,6 @@ async function updateUserAchievement(req, res) {
 
   const updatedAchievement = await achievementsApi.updateUserAchievement(
     userId,
-    achievementId,
     achievement
   );
   return res.status(200).json(updatedAchievement);

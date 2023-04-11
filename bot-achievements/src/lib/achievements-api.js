@@ -90,6 +90,7 @@ async function removeTagFromUserAchievement(userId, achievementId, tag) {
 }
 
 async function updateUserAchievement(userId, achievementId, data) {
+  console.log('updateUserAchievement', userId, achievementId, data);
   const response = await fetch(
     `${API_URL}/${userId}/achievements/${achievementId}`,
     {

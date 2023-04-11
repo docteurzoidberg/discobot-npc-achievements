@@ -20,6 +20,7 @@ WORKDIR /app
 COPY package*.json ./
 
 RUN npm install --production
+RUN npm install -g pino-pretty
 
 # Then app source
 COPY --chown=node:node . .
@@ -29,4 +30,4 @@ USER node
 
 EXPOSE 5000
 
-CMD ["dumb-init", "node", "src/index.js"]
+CMD ["dumb-init", "npm", "run", "start"]

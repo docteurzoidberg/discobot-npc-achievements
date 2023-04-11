@@ -54,12 +54,7 @@ function _checkTag(tag) {
 function _checkAchievement(achievement) {
   //must be an achievement object
   if (!achievement) throw new Error('achievement is required');
-  if (typeof achievement !== 'object')
-    throw new Error('achievement must be an object');
   if (!achievement.id) throw new Error('achievement.id is required');
-  if (!achievement.title) throw new Error('achievement.title is required');
-  if (!achievement.description)
-    throw new Error('achievement.description is required');
 }
 
 function _checkUserSettings(settings) {
