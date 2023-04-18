@@ -23,5 +23,5 @@ COPY . .
 RUN npm run register
 
 # RUN
-CMD ["dumb-init", "npm", "run", "bot"]
+CMD ["dumb-init", "npm", "run", "start"]
 
